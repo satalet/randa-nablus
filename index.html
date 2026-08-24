@@ -15,7 +15,6 @@
         body { font-family: 'Tajawal', sans-serif; background-color: #fdf2f8; margin: 0; padding: 0; }
         .post-card { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* أنيميشن شاشة البداية */
         #splashScreen { transition: opacity 1s ease-out; }
     </style>
 </head>
@@ -23,7 +22,6 @@
 
     <!-- شاشة البداية (Splash Screen) -->
     <div id="splashScreen" class="fixed inset-0 z-50 bg-pink-500 flex flex-col items-center justify-center text-white">
-        <!-- هون صورة رندة بنابلس -->
         <img src="splash.jpg" alt="رندة في نابلس" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
         <h1 class="text-4xl font-bold mb-2">يوميات رندة</h1>
         <p class="text-xl opacity-90">أحلى الأوقات في نابلس 🌸</p>
@@ -197,16 +195,28 @@
 
         function renderPosts() {
             const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-            postsFeed.innerHTML = posts.map(post => `
+            
+            // --- بوست المفاجأة الثابت من الأبو ---
+            const dadSurprisePost = {
+                date: 'رسالة خاصة من بابا 🌸',
+                image: 'dad-randa.jpg',
+                ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة نابلس يا روح أبوكِ ✨',
+                ko: '내 작은 천사 란다.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸'
+            };
+
+            // دمج بوست الأب مع باقي بوستات رندة
+            const allPosts = [dadSurprisePost, ...posts];
+
+            postsFeed.innerHTML = allPosts.map(post => `
                 <div class="post-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-2">
                     ${post.image ? `<img src="${post.image}" class="w-full h-72 object-cover">` : ''}
                     <div class="p-5">
-                        <div class="text-xs text-gray-400 mb-3 font-medium">${post.date}</div>
+                        <div class="text-xs text-pink-500 font-bold mb-3">${post.date}</div>
                         ${post.ar ? `<p class="text-gray-800 font-bold mb-3 text-lg leading-relaxed">${post.ar}</p>` : ''}
                         ${post.ko ? `
                             <div class="bg-pink-50 p-4 rounded-2xl flex justify-between items-center mt-3 border border-pink-100">
                                 <p class="text-pink-700 font-medium flex-1 text-left text-lg" dir="ltr">${post.ko}</p>
-                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
+                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
                             </div>
                         ` : ''}
                     </div>
