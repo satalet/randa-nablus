@@ -65,7 +65,7 @@
     <!-- Header -->
     <header class="bg-pink-500 text-white p-4 shadow-md sticky top-0 z-10 text-center rounded-b-3xl relative">
         <h1 class="text-2xl font-bold">يوميات رندة 🌸</h1>
-        <p class="text-sm opacity-90">الالبوم الخاص لتوثيق أحلى اللحظات</p>
+        <p class="text-sm opacity-90">ديباك! توثيق أحلى اللحظات</p>
 
         <!-- زر تسجيل الدخول / الخروج للأدمن -->
         <button id="authBtn" onclick="handleAuthToggle()" class="absolute left-3 top-4 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
@@ -579,7 +579,29 @@
                     isAdminLoggedIn = true;
                 }
                 updateAdminUI();
-                renderPosts();
+
+                // جلب المنشورات العامة من السحاب ودمجها تلقائياً مع الذاكرة المحلية
+                const checkFirebase = setInterval(() => {
+                    if (window.db && window.onSnapshot && window.collection) {
+                        clearInterval(checkFirebase);
+                        window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
+                            const cloudPosts = snapshot.docs.map(doc => doc.data());
+                            let localPosts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+                            
+                            // دمج منشورات السحاب مع المحلي لمنع الضياع
+                            cloudPosts.forEach(cPost => {
+                                const exists = localPosts.some(lPost => String(lPost.id) === String(cPost.id));
+                                if (!exists) {
+                                    localPosts.push(cPost);
+                                }
+                            });
+                            
+                            localPosts.sort((a, b) => b.id - a.id);
+                            localStorage.setItem('randa_diary_posts', JSON.stringify(localPosts));
+                            renderPosts();
+                        });
+                    }
+                }, 200);
             }
         });
     </script>
