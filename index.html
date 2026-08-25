@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>يوميات رندة في نابلس 🌸</title>
-    <!-- ربط ملف التثبيت PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ec4899">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -20,7 +19,7 @@
 </head>
 <body class="pb-20">
 
-    <!-- شاشة البداية (Splash Screen) -->
+    <!-- شاشة البداية -->
     <div id="splashScreen" class="fixed inset-0 z-50 bg-pink-500 flex flex-col items-center justify-center text-white">
         <img src="splash.jpg" alt="رندة في نابلس" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
         <h1 class="text-4xl font-bold mb-2">يوميات رندة</h1>
@@ -41,9 +40,8 @@
     <main class="p-4 max-w-md mx-auto mt-2">
         <!-- Add Post Section -->
         <div class="bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
-            <h2 class="text-lg font-bold text-pink-600 mb-4">إضافة يومية جديدة ✨</h2>
+            <h2 id="formTitle" class="text-lg font-bold text-pink-600 mb-4">إضافة يومية جديدة ✨</h2>
             
-            <!-- زرين منفصلين للكاميرا والاستديو عشان ننهي مشكلة الشاومي -->
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <button type="button" onclick="document.getElementById('cameraInput').click()" class="bg-pink-50 border-2 border-dashed border-pink-300 rounded-2xl p-4 text-center hover:bg-pink-100 transition flex flex-col items-center justify-center shadow-sm">
                     <span class="text-3xl mb-1">📸</span>
@@ -76,6 +74,18 @@
             <button id="saveBtn" class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-md hover:opacity-90 transition text-lg flex justify-center items-center gap-2">
                 <span>نشر في اليوميات</span> 🚀
             </button>
+            <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
+        </div>
+
+        <!-- Backup & Restore Section (Protected) -->
+        <div class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 flex gap-3">
+            <button onclick="backupData()" class="flex-1 bg-pink-50 text-pink-600 font-bold py-2.5 px-3 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
+                <span>📦 حفظ نسخة محمية</span>
+            </button>
+            <button onclick="document.getElementById('restoreFile').click()" class="flex-1 bg-purple-50 text-purple-600 font-bold py-2.5 px-3 rounded-2xl border border-purple-200 hover:bg-purple-100 transition text-xs flex items-center justify-center gap-1">
+                <span>📥 استعادة النسخة</span>
+            </button>
+            <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
         </div>
 
         <!-- Posts Feed -->
@@ -84,6 +94,8 @@
     </main>
 
     <script>
+        const SECRET_PIN = "201214";
+
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -102,13 +114,15 @@
         const arText = document.getElementById('arText');
         const koText = document.getElementById('koText');
         const saveBtn = document.getElementById('saveBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const formTitle = document.getElementById('formTitle');
         const postsFeed = document.getElementById('postsFeed');
         const micBtn = document.getElementById('micBtn');
         const micStatus = document.getElementById('micStatus');
         
         let currentImageBase64 = '';
+        let editingId = null;
 
-        // دالة لمعالجة الصورة سواء جاءت من الكاميرا أو الاستديو
         function handleImage(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -182,21 +196,138 @@
                 return;
             }
             
-            const post = {
-                id: Date.now(),
-                date: new Date().toLocaleString('ar-PS'),
-                image: currentImageBase64,
-                ar: arText.value,
-                ko: koText.value
-            };
+            let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
 
-            const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-            posts.unshift(post);
+            if (editingId) {
+                posts = posts.map(p => {
+                    if (p.id === editingId) {
+                        return {
+                            ...p,
+                            ar: arText.value,
+                            ko: koText.value,
+                            image: currentImageBase64 || p.image
+                        };
+                    }
+                    return p;
+                });
+                editingId = null;
+                formTitle.textContent = 'إضافة يومية جديدة ✨';
+                saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
+                cancelEditBtn.classList.add('hidden');
+            } else {
+                const post = {
+                    id: Date.now(),
+                    date: new Date().toLocaleString('ar-PS'),
+                    image: currentImageBase64,
+                    ar: arText.value,
+                    ko: koText.value
+                };
+                posts.unshift(post);
+            }
+
             localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
             
-            currentImageBase64 = ''; preview.classList.add('hidden'); preview.src = ''; arText.value = ''; koText.value = '';
+            currentImageBase64 = ''; 
+            preview.classList.add('hidden'); 
+            preview.src = ''; 
+            arText.value = ''; 
+            koText.value = '';
             renderPosts();
         });
+
+        cancelEditBtn.addEventListener('click', () => {
+            editingId = null;
+            formTitle.textContent = 'إضافة يومية جديدة ✨';
+            saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
+            cancelEditBtn.classList.add('hidden');
+            currentImageBase64 = '';
+            preview.classList.add('hidden');
+            preview.src = '';
+            arText.value = '';
+            koText.value = '';
+        });
+
+        window.deletePost = function(id) {
+            if (confirm('متأكدة بدك تحذفي هاي اليومية؟')) {
+                let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+                posts = posts.filter(p => p.id !== id);
+                localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+                renderPosts();
+            }
+        };
+
+        window.editPost = function(id) {
+            const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            if (!post) return;
+
+            editingId = id;
+            arText.value = post.ar || '';
+            koText.value = post.ko || '';
+            if (post.image) {
+                currentImageBase64 = post.image;
+                preview.src = post.image;
+                preview.classList.remove('hidden');
+            } else {
+                currentImageBase64 = '';
+                preview.classList.add('hidden');
+            }
+
+            formTitle.textContent = 'تعديل اليومية ✍️';
+            saveBtn.querySelector('span').textContent = 'حفظ التعديلات';
+            cancelEditBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // دالة تصدير النسخة الاحتياطية مع تشفير سري
+        window.backupData = function() {
+            const pin = prompt('أدخل الرقم السري للنسخة الاحتياطية:');
+            if (pin !== SECRET_PIN) {
+                if (pin !== null) alert('الرقم السري غير صحيح! ❌');
+                return;
+            }
+            const posts = localStorage.getItem('randa_diary_posts') || '[]';
+            // تشفير بسيط جداً (btoa) لحماية البيانات داخل الملف
+            const encryptedData = btoa(encodeURIComponent(posts));
+            const blob = new Blob([encryptedData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `randa-nablus-backup-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert('تم حفظ النسخة الاحتياطية المشفرة بنجاح! 📦✅');
+        };
+
+        // دالة استعادة النسخة الاحتياطية
+        window.restoreData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const pin = prompt('أدخل الرقم السري لاستعادة النسخة:');
+            if (pin !== SECRET_PIN) {
+                alert('الرقم السري غير صحيح! ❌');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const encryptedData = e.target.result;
+                    const decryptedData = decodeURIComponent(atob(encryptedData));
+                    // فحص إذا البيانات صحيحة
+                    JSON.parse(decryptedData); 
+                    localStorage.setItem('randa_diary_posts', decryptedData);
+                    renderPosts();
+                    alert('تمت استعادة الذكريات بنجاح تام! 🌸🎉');
+                } catch (err) {
+                    alert('ملف النسخة الاحتياطية غير صالح أو تالف! ❌');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        };
 
         window.speakKorean = function(text) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -211,13 +342,21 @@
                 date: 'رسالة خاصة من بابا 🌸',
                 image: 'dad-randa.jpg',
                 ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة نابلس يا روح أبوكِ ✨',
-                ko: '내 작은 천사 란다.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸'
+                ko: '내 작은 천사 란다.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
+                isDad: true
             };
 
             const allPosts = [dadSurprisePost, ...posts];
 
             postsFeed.innerHTML = allPosts.map(post => `
-                <div class="post-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-2">
+                <div class="post-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-3 relative">
+                    ${!post.isDad ? `
+                        <div class="absolute top-3 left-3 z-10 flex gap-2">
+                            <button onclick="editPost(${post.id})" class="bg-white/85 hover:bg-white text-blue-600 p-2 rounded-full shadow transition" title="تعديل">✏️</button>
+                            <button onclick="deletePost(${post.id})" class="bg-white/85 hover:bg-white text-red-600 p-2 rounded-full shadow transition" title="حذف">🗑️</button>
+                        </div>
+                    ` : ''}
+                    
                     ${post.image ? `<img src="${post.image}" class="w-full h-72 object-cover">` : ''}
                     <div class="p-5">
                         <div class="text-xs text-pink-500 font-bold mb-3">${post.date}</div>
@@ -225,7 +364,7 @@
                         ${post.ko ? `
                             <div class="bg-pink-50 p-4 rounded-2xl flex justify-between items-center mt-3 border border-pink-100">
                                 <p class="text-pink-700 font-medium flex-1 text-left text-lg" dir="ltr">${post.ko}</p>
-                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
+                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
                             </div>
                         ` : ''}
                     </div>
