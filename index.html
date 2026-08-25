@@ -156,12 +156,10 @@
         let isAdminLoggedIn = false;
         let isViewerMode = false;
 
-        // التحقق من كلمة المرور المشفرة
         function verifyPassword(inputPass) {
             return btoa(inputPass) === AUTH_HASH;
         }
 
-        // شاشة البداية (5 ثوانٍ)
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -192,14 +190,13 @@
         let currentImageBase64 = '';
         let editingId = null;
 
-        // إدارة قفل الأدمن
         window.handleAuthToggle = function() {
             if (isAdminLoggedIn) {
                 if (confirm('هل ترغبين بتسجيل الخروج من لوحة الأدمن؟')) {
                     sessionStorage.removeItem('randa_admin_auth');
                     isAdminLoggedIn = false;
                     updateAdminUI();
-                    renderPosts();
+                    location.reload();
                 }
             } else {
                 const pass = prompt('أدخلي كلمة المرور للوصول إلى لوحة التحكم:');
@@ -516,7 +513,7 @@
                 date: 'رسالة خاصة من بابا 🌸',
                 image: 'dad-randa.jpg',
                 ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة نابلس يا روح أبوكِ ✨',
-                ko: '내 작은 천사 란다.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
+                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단دا. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
                 isDad: true
             };
 
@@ -556,53 +553,58 @@
             `).join('');
         }
 
-        // تهيئة التطبيق وفحص وضع الحساب
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'view') {
                 isViewerMode = true;
                 authBtn.style.display = 'none';
                 document.getElementById('viewerNotice').classList.remove('hidden');
+            }
 
-                const checkFirebase = setInterval(() => {
-                    if (window.db && window.onSnapshot && window.collection) {
-                        clearInterval(checkFirebase);
-                        window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
-                            const cloudPosts = snapshot.docs.map(doc => doc.data());
-                            cloudPosts.sort((a, b) => b.id - a.id);
+            if (sessionStorage.getItem('randa_admin_auth') === 'true') {
+                isAdminLoggedIn = true;
+            }
+            updateAdminUI();
+
+            // الاستماع اللحظي والحي للسحاب (Real-Time Sync)
+            const checkFirebase = setInterval(() => {
+                if (window.db && window.onSnapshot && window.collection) {
+                    clearInterval(checkFirebase);
+                    window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
+                        const cloudPosts = snapshot.docs.map(doc => doc.data());
+                        cloudPosts.sort((a, b) => b.id - a.id);
+
+                        if (!isAdminLoggedIn) {
+                            // إذا مش أدمن: اعرض السحاب فورا وبشكل لحظي حقيقي
                             renderPosts(cloudPosts);
-                        });
-                    }
-                }, 200);
-            } else {
-                if (sessionStorage.getItem('randa_admin_auth') === 'true') {
-                    isAdminLoggedIn = true;
-                }
-                updateAdminUI();
-
-                // جلب المنشورات العامة من السحاب ودمجها تلقائياً مع الذاكرة المحلية
-                const checkFirebase = setInterval(() => {
-                    if (window.db && window.onSnapshot && window.collection) {
-                        clearInterval(checkFirebase);
-                        window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
-                            const cloudPosts = snapshot.docs.map(doc => doc.data());
+                        } else {
+                            // إذا أدمن: ادمج محلياً وتأكد من تحديث الحالة فوراً
                             let localPosts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                             
-                            // دمج منشورات السحاب مع المحلي لمنع الضياع
                             cloudPosts.forEach(cPost => {
-                                const exists = localPosts.some(lPost => String(lPost.id) === String(cPost.id));
-                                if (!exists) {
+                                const index = localPosts.findIndex(lPost => String(lPost.id) === String(cPost.id));
+                                if (index !== -1) {
+                                    localPosts[index] = cPost;
+                                } else {
                                     localPosts.push(cPost);
                                 }
                             });
-                            
+
+                            const cloudIds = cloudPosts.map(p => String(p.id));
+                            localPosts = localPosts.map(p => {
+                                if (p.isPublic && !cloudIds.includes(String(p.id))) {
+                                    return { ...p, isPublic: false };
+                                }
+                                return p;
+                            });
+
                             localPosts.sort((a, b) => b.id - a.id);
                             localStorage.setItem('randa_diary_posts', JSON.stringify(localPosts));
                             renderPosts();
-                        });
-                    }
-                }, 200);
-            }
+                        }
+                    });
+                }
+            }, 200);
         });
     </script>
 </body>
