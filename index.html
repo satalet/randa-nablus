@@ -50,7 +50,7 @@
         🌸 أهلاً بكِ! أنتِ تتصفحين ألبوم رندة العام 🌸
     </div>
 
-    <!-- شاشة البداية (10 ثوانٍ) -->
+    <!-- شاشة البداية (5 ثوانٍ) -->
     <div id="splashScreen" class="fixed inset-0 z-50 bg-pink-500 flex flex-col items-center justify-center text-white">
         <img src="splash.jpg" alt="رندة في نابلس" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
         <h1 class="text-4xl font-bold mb-2">يوميات رندة</h1>
@@ -63,14 +63,19 @@
     </div>
 
     <!-- Header -->
-    <header class="bg-pink-500 text-white p-4 shadow-md sticky top-0 z-10 text-center rounded-b-3xl">
+    <header class="bg-pink-500 text-white p-4 shadow-md sticky top-0 z-10 text-center rounded-b-3xl relative">
         <h1 class="text-2xl font-bold">يوميات رندة 🌸</h1>
         <p class="text-sm opacity-90">ديباك! توثيق أحلى اللحظات</p>
+
+        <!-- زر تسجيل الدخول / الخروج للأدمن -->
+        <button id="authBtn" onclick="handleAuthToggle()" class="absolute left-3 top-4 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
+            🔑 دخول الأدمن
+        </button>
     </header>
 
     <main class="p-4 max-w-md mx-auto mt-2">
-        <!-- Add Post Section (Admin Only) -->
-        <div id="addPostForm" class="bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
+        <!-- Add Post Section (Admin Only - Hidden by default) -->
+        <div id="addPostForm" class="hidden bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h2 id="formTitle" class="text-lg font-bold text-pink-600 mb-4">إضافة يومية جديدة ✨</h2>
             
             <div class="grid grid-cols-2 gap-3 mb-4">
@@ -127,8 +132,8 @@
             <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
         </div>
 
-        <!-- Backup & Share Link Section -->
-        <div id="adminBackupSection" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 flex gap-2">
+        <!-- Backup & Share Link Section (Admin Only - Hidden by default) -->
+        <div id="adminBackupSection" class="hidden bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 flex gap-2">
             <button onclick="backupData()" class="flex-1 bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
             </button>
@@ -147,10 +152,16 @@
     </main>
 
     <script>
-        const SECRET_PIN = "201214";
+        const AUTH_HASH = "MjAxMjE5ODFsZWU=";
+        let isAdminLoggedIn = false;
         let isViewerMode = false;
 
-        // شاشة البداية 5 ثوانٍ
+        // التحقق من كلمة المرور المشفرة
+        function verifyPassword(inputPass) {
+            return btoa(inputPass) === AUTH_HASH;
+        }
+
+        // شاشة البداية (5 ثوانٍ)
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -176,9 +187,52 @@
         const postsFeed = document.getElementById('postsFeed');
         const micBtn = document.getElementById('micBtn');
         const micStatus = document.getElementById('micStatus');
+        const authBtn = document.getElementById('authBtn');
         
         let currentImageBase64 = '';
         let editingId = null;
+
+        // إدارة قفل الأدمن
+        window.handleAuthToggle = function() {
+            if (isAdminLoggedIn) {
+                if (confirm('هل ترغبين بتسجيل الخروج من لوحة الأدمن؟')) {
+                    sessionStorage.removeItem('randa_admin_auth');
+                    isAdminLoggedIn = false;
+                    updateAdminUI();
+                    renderPosts();
+                }
+            } else {
+                const pass = prompt('أدخلي كلمة المرور للوصول إلى لوحة التحكم:');
+                if (pass !== null) {
+                    if (verifyPassword(pass)) {
+                        sessionStorage.setItem('randa_admin_auth', 'true');
+                        isAdminLoggedIn = true;
+                        updateAdminUI();
+                        renderPosts();
+                        alert('أهلاً رندة! تم تفعيل لوحة التحكم بنجاح 🌸✨');
+                    } else {
+                        alert('كلمة المرور غير صحيحة! ❌');
+                    }
+                }
+            }
+        };
+
+        function updateAdminUI() {
+            const addForm = document.getElementById('addPostForm');
+            const backupSec = document.getElementById('adminBackupSection');
+            
+            if (isAdminLoggedIn && !isViewerMode) {
+                addForm.classList.remove('hidden');
+                backupSec.classList.remove('hidden');
+                authBtn.innerHTML = '🔒 خروج الأدمن';
+                authBtn.classList.replace('bg-white/20', 'bg-red-500/80');
+            } else {
+                addForm.classList.add('hidden');
+                backupSec.classList.add('hidden');
+                authBtn.innerHTML = '🔑 دخول الأدمن';
+                authBtn.classList.replace('bg-red-500/80', 'bg-white/20');
+            }
+        }
 
         function handleImage(e) {
             const file = e.target.files[0];
@@ -247,7 +301,6 @@
             micBtn.style.display = 'none';
         }
 
-        // مزامنة السحاب
         async function syncToCloud(post) {
             if (!window.db) return;
             try {
@@ -271,6 +324,7 @@
         }
 
         saveBtn.addEventListener('click', async () => {
+            if (!isAdminLoggedIn) return;
             if (!currentImageBase64 && !arText.value && !koText.value) {
                 alert('اكتبي إشي أو حطي صورة أول!');
                 return;
@@ -278,7 +332,6 @@
             
             const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
             let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-
             let updatedPost = null;
 
             if (editingId) {
@@ -337,6 +390,7 @@
         });
 
         window.deletePost = async function(id) {
+            if (!isAdminLoggedIn) return;
             if (confirm('متأكدة بدك تحذفي هاي اليومية؟')) {
                 let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                 posts = posts.filter(p => p.id !== id);
@@ -347,6 +401,7 @@
         };
 
         window.togglePrivacy = async function(id) {
+            if (!isAdminLoggedIn) return;
             let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             let changedPost = null;
             posts = posts.map(p => {
@@ -364,6 +419,7 @@
         };
 
         window.editPost = function(id) {
+            if (!isAdminLoggedIn) return;
             const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             const post = posts.find(p => p.id === id);
             if (!post) return;
@@ -400,9 +456,10 @@
         };
 
         window.backupData = function() {
-            const pin = prompt('أدخل الرقم السري للنسخة الاحتياطية:');
-            if (pin !== SECRET_PIN) {
-                if (pin !== null) alert('الرقم السري غير صحيح! ❌');
+            if (!isAdminLoggedIn) return;
+            const pass = prompt('أدخل كلمة المرور لتأكيد حفظ النسخة:');
+            if (!verifyPassword(pass)) {
+                if (pass !== null) alert('كلمة المرور غير صحيحة! ❌');
                 return;
             }
             const posts = localStorage.getItem('randa_diary_posts') || '[]';
@@ -414,16 +471,17 @@
             a.download = `randa-nablus-backup-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            alert('تم حفظ النسخة الاحتياطية المشفرة بنجاح! 📦✅');
+            alert('تم حفظ النسخة الاحتياطية بنجاح! 📦✅');
         };
 
         window.restoreData = function(event) {
+            if (!isAdminLoggedIn) return;
             const file = event.target.files[0];
             if (!file) return;
 
-            const pin = prompt('أدخل الرقم السري لاستعادة النسخة:');
-            if (pin !== SECRET_PIN) {
-                alert('الرقم السري غير صحيح! ❌');
+            const pass = prompt('أدخل كلمة المرور لاستعادة النسخة:');
+            if (!verifyPassword(pass)) {
+                alert('كلمة المرور غير صحيحة! ❌');
                 event.target.value = '';
                 return;
             }
@@ -466,7 +524,7 @@
 
             postsFeed.innerHTML = allPosts.map(post => `
                 <div class="post-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-3 relative">
-                    ${(!post.isDad && !isViewerMode) ? `
+                    ${(!post.isDad && isAdminLoggedIn && !isViewerMode) ? `
                         <div class="absolute top-3 left-3 z-10 flex gap-1.5">
                             <button onclick="togglePrivacy(${post.id})" class="bg-white/90 hover:bg-white text-xs px-2.5 py-1.5 rounded-full shadow transition font-bold ${post.isPublic ? 'text-green-600' : 'text-gray-500'}" title="تغيير الخصوصية">
                                 ${post.isPublic ? '🌐 عام' : '🔒 خاص'}
@@ -480,7 +538,7 @@
                     <div class="p-5">
                         <div class="flex justify-between items-center mb-3">
                             <span class="text-xs text-pink-500 font-bold">${post.date}</span>
-                            ${(!post.isDad && !isViewerMode) ? `
+                            ${(!post.isDad && isAdminLoggedIn && !isViewerMode) ? `
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${post.isPublic ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
                                     ${post.isPublic ? 'منشور للعامة' : 'خاص بجهازي'}
                                 </span>
@@ -498,16 +556,14 @@
             `).join('');
         }
 
-        // فحص وضع الزائر
+        // تهيئة التطبيق وفحص وضع الحساب
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'view') {
                 isViewerMode = true;
-                document.getElementById('addPostForm').style.display = 'none';
-                document.getElementById('adminBackupSection').style.display = 'none';
+                authBtn.style.display = 'none';
                 document.getElementById('viewerNotice').classList.remove('hidden');
 
-                // الاستماع اللحظي للعام فقط من Firebase
                 const checkFirebase = setInterval(() => {
                     if (window.db && window.onSnapshot && window.collection) {
                         clearInterval(checkFirebase);
@@ -519,6 +575,10 @@
                     }
                 }, 200);
             } else {
+                if (sessionStorage.getItem('randa_admin_auth') === 'true') {
+                    isAdminLoggedIn = true;
+                }
+                updateAdminUI();
                 renderPosts();
             }
         });
