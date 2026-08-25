@@ -20,7 +20,7 @@
     <!-- Firebase SDK (v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
@@ -37,15 +37,17 @@
 
         window.db = db;
         window.setDoc = setDoc;
+        window.deleteDoc = deleteDoc;
         window.doc = doc;
-        window.getDoc = getDoc;
+        window.collection = collection;
+        window.onSnapshot = onSnapshot;
     </script>
 </head>
 <body class="pb-20">
 
     <!-- شريط وضع الزائر (لصديقات رندة) -->
     <div id="viewerNotice" class="hidden bg-pink-500 text-white text-center py-2 px-4 font-bold text-sm sticky top-0 z-50 shadow-md">
-        🌸 مرحباً بكِ! أنتِ تتصفحين ألبوم رندة (وضع العرض فقط) 🌸
+        🌸 أهلاً بكِ! أنتِ تتصفحين ألبوم رندة العام 🌸
     </div>
 
     <!-- شاشة البداية (10 ثوانٍ) -->
@@ -99,6 +101,25 @@
                 <textarea id="koText" rows="2" class="w-full p-4 border border-pink-200 bg-pink-50 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-left font-medium text-pink-900" dir="ltr" placeholder="الترجمة الكورية رح تطلع هون..."></textarea>
             </div>
 
+            <!-- خيار الخصوصية: خاص أم عام -->
+            <div class="mb-4 bg-pink-50 p-3 rounded-2xl border border-pink-100">
+                <label class="block text-xs font-bold text-pink-600 mb-2">نوع النشر:</label>
+                <div class="flex gap-2">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="privacyOpt" value="private" id="privPrivate" checked class="peer hidden">
+                        <div class="p-2.5 text-center text-xs font-bold rounded-xl border border-pink-200 bg-white peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 text-pink-700 transition shadow-sm">
+                            🔒 خاص (جهازي فقط)
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="privacyOpt" value="public" id="privPublic" class="peer hidden">
+                        <div class="p-2.5 text-center text-xs font-bold rounded-xl border border-pink-200 bg-white peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 text-pink-700 transition shadow-sm">
+                            🌐 عام (للصديقات)
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <!-- Submit Button -->
             <button id="saveBtn" class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-md hover:opacity-90 transition text-lg flex justify-center items-center gap-2">
                 <span>نشر في اليوميات</span> 🚀
@@ -106,7 +127,7 @@
             <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
         </div>
 
-        <!-- Backup, Restore & Cloud Share Section -->
+        <!-- Backup & Share Link Section -->
         <div id="adminBackupSection" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 flex gap-2">
             <button onclick="backupData()" class="flex-1 bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
@@ -114,8 +135,8 @@
             <button onclick="document.getElementById('restoreFile').click()" class="flex-1 bg-purple-50 text-purple-600 font-bold py-2.5 px-2 rounded-2xl border border-purple-200 hover:bg-purple-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📥 استعادة</span>
             </button>
-            <button onclick="publishToCloud()" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-2.5 px-2 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
-                <span>☁️ مشاركة الألبوم</span>
+            <button onclick="copyFriendLink()" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-2.5 px-2 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
+                <span>🔗 رابط الصديقات</span>
             </button>
             <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
         </div>
@@ -129,7 +150,7 @@
         const SECRET_PIN = "201214";
         let isViewerMode = false;
 
-        // تمديد شاشة البداية لـ 10 ثوانٍ
+        // شاشة البداية 10 ثوانٍ
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -137,7 +158,7 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.remove(), 1000);
                 }
-            }, 10000); // 10000 ملي ثانية = 10 ثوانٍ
+            }, 10000);
         });
 
         if ('serviceWorker' in navigator) {
@@ -226,23 +247,51 @@
             micBtn.style.display = 'none';
         }
 
-        saveBtn.addEventListener('click', () => {
+        // مزامنة السحاب
+        async function syncToCloud(post) {
+            if (!window.db) return;
+            try {
+                if (post.isPublic) {
+                    await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), post);
+                } else {
+                    await window.deleteDoc(window.doc(window.db, "public_posts", String(post.id)));
+                }
+            } catch(e) {
+                console.error("Firebase Sync Error: ", e);
+            }
+        }
+
+        async function removeFromCloud(postId) {
+            if (!window.db) return;
+            try {
+                await window.deleteDoc(window.doc(window.db, "public_posts", String(postId)));
+            } catch(e) {
+                console.error("Firebase Remove Error: ", e);
+            }
+        }
+
+        saveBtn.addEventListener('click', async () => {
             if (!currentImageBase64 && !arText.value && !koText.value) {
                 alert('اكتبي إشي أو حطي صورة أول!');
                 return;
             }
             
+            const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
             let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+
+            let updatedPost = null;
 
             if (editingId) {
                 posts = posts.map(p => {
                     if (p.id === editingId) {
-                        return {
+                        updatedPost = {
                             ...p,
                             ar: arText.value,
                             ko: koText.value,
-                            image: currentImageBase64 || p.image
+                            image: currentImageBase64 || p.image,
+                            isPublic: isPublicChoice
                         };
+                        return updatedPost;
                     }
                     return p;
                 });
@@ -251,23 +300,26 @@
                 saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
                 cancelEditBtn.classList.add('hidden');
             } else {
-                const post = {
+                updatedPost = {
                     id: Date.now(),
                     date: new Date().toLocaleString('ar-PS'),
                     image: currentImageBase64,
                     ar: arText.value,
-                    ko: koText.value
+                    ko: koText.value,
+                    isPublic: isPublicChoice
                 };
-                posts.unshift(post);
+                posts.unshift(updatedPost);
             }
 
             localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+            await syncToCloud(updatedPost);
             
             currentImageBase64 = ''; 
             preview.classList.add('hidden'); 
             preview.src = ''; 
             arText.value = ''; 
             koText.value = '';
+            document.getElementById('privPrivate').checked = true;
             renderPosts();
         });
 
@@ -281,15 +333,34 @@
             preview.src = '';
             arText.value = '';
             koText.value = '';
+            document.getElementById('privPrivate').checked = true;
         });
 
-        window.deletePost = function(id) {
+        window.deletePost = async function(id) {
             if (confirm('متأكدة بدك تحذفي هاي اليومية؟')) {
                 let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                 posts = posts.filter(p => p.id !== id);
                 localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+                await removeFromCloud(id);
                 renderPosts();
             }
+        };
+
+        window.togglePrivacy = async function(id) {
+            let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            let changedPost = null;
+            posts = posts.map(p => {
+                if (p.id === id) {
+                    changedPost = { ...p, isPublic: !p.isPublic };
+                    return changedPost;
+                }
+                return p;
+            });
+            localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+            if (changedPost) {
+                await syncToCloud(changedPost);
+            }
+            renderPosts();
         };
 
         window.editPost = function(id) {
@@ -300,6 +371,12 @@
             editingId = id;
             arText.value = post.ar || '';
             koText.value = post.ko || '';
+            if (post.isPublic) {
+                document.getElementById('privPublic').checked = true;
+            } else {
+                document.getElementById('privPrivate').checked = true;
+            }
+
             if (post.image) {
                 currentImageBase64 = post.image;
                 preview.src = post.image;
@@ -315,7 +392,13 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // دالة تصدير النسخة الاحتياطية مع تشفير سري
+        window.copyFriendLink = function() {
+            const link = `${window.location.origin}${window.location.pathname}?mode=view`;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('🔗 تم نسخ رابط الصديقات بنجاح!\nشاركي الرابط مع صديقاتك ليشوفوا اليوميات العامة فقط.');
+            });
+        };
+
         window.backupData = function() {
             const pin = prompt('أدخل الرقم السري للنسخة الاحتياطية:');
             if (pin !== SECRET_PIN) {
@@ -334,7 +417,6 @@
             alert('تم حفظ النسخة الاحتياطية المشفرة بنجاح! 📦✅');
         };
 
-        // دالة استعادة النسخة الاحتياطية
         window.restoreData = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -363,45 +445,6 @@
             reader.readAsText(file);
         };
 
-        // النشر السحابي في Firebase لمشاركة الألبوم
-        window.publishToCloud = async function() {
-            const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-            if (posts.length === 0) {
-                alert('لا توجد منشورات لمشاركتها حالياً!');
-                return;
-            }
-
-            try {
-                const albumId = "randa_shared_album";
-                await window.setDoc(window.doc(window.db, "albums", albumId), {
-                    posts: posts,
-                    updatedAt: new Date().toISOString()
-                });
-
-                const shareUrl = `${window.location.origin}${window.location.pathname}?mode=view&album=${albumId}`;
-                await navigator.clipboard.writeText(shareUrl);
-                alert('✅ تم نشر الألبوم بنجاح على السحابة!\n\nتم نسخ رابط العرض لصديقات رندة:\n' + shareUrl);
-            } catch (e) {
-                console.error(e);
-                alert('حدث خطأ أثناء الرفع السحابي، تأكد من الاتصال بالإنترنت.');
-            }
-        };
-
-        // جلب الألبوم من السحابة للزوار
-        async function loadFromCloud(albumId) {
-            try {
-                const docRef = window.doc(window.db, "albums", albumId);
-                const docSnap = await window.getDoc(docRef);
-                if (docSnap.exists()) {
-                    renderPosts(docSnap.data().posts);
-                } else {
-                    alert('⚠️ لم يتم العثور على الألبوم المطلوبة.');
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
         window.speakKorean = function(text) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'ko-KR';
@@ -424,15 +467,25 @@
             postsFeed.innerHTML = allPosts.map(post => `
                 <div class="post-card bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden pb-3 relative">
                     ${(!post.isDad && !isViewerMode) ? `
-                        <div class="absolute top-3 left-3 z-10 flex gap-2">
-                            <button onclick="editPost(${post.id})" class="bg-white/85 hover:bg-white text-blue-600 p-2 rounded-full shadow transition" title="تعديل">✏️</button>
-                            <button onclick="deletePost(${post.id})" class="bg-white/85 hover:bg-white text-red-600 p-2 rounded-full shadow transition" title="حذف">🗑️</button>
+                        <div class="absolute top-3 left-3 z-10 flex gap-1.5">
+                            <button onclick="togglePrivacy(${post.id})" class="bg-white/90 hover:bg-white text-xs px-2.5 py-1.5 rounded-full shadow transition font-bold ${post.isPublic ? 'text-green-600' : 'text-gray-500'}" title="تغيير الخصوصية">
+                                ${post.isPublic ? '🌐 عام' : '🔒 خاص'}
+                            </button>
+                            <button onclick="editPost(${post.id})" class="bg-white/90 hover:bg-white text-blue-600 p-2 rounded-full shadow transition" title="تعديل">✏️</button>
+                            <button onclick="deletePost(${post.id})" class="bg-white/90 hover:bg-white text-red-600 p-2 rounded-full shadow transition" title="حذف">🗑️</button>
                         </div>
                     ` : ''}
                     
                     ${post.image ? `<img src="${post.image}" class="w-full h-72 object-cover">` : ''}
                     <div class="p-5">
-                        <div class="text-xs text-pink-500 font-bold mb-3">${post.date}</div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-pink-500 font-bold">${post.date}</span>
+                            ${(!post.isDad && !isViewerMode) ? `
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${post.isPublic ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
+                                    ${post.isPublic ? 'منشور للعامة' : 'خاص بجهازي'}
+                                </span>
+                            ` : ''}
+                        </div>
                         ${post.ar ? `<p class="text-gray-800 font-bold mb-3 text-lg leading-relaxed">${post.ar}</p>` : ''}
                         ${post.ko ? `
                             <div class="bg-pink-50 p-4 rounded-2xl flex justify-between items-center mt-3 border border-pink-100">
@@ -445,8 +498,8 @@
             `).join('');
         }
 
-        // فحص وضع العرض عند التحميل
-        document.addEventListener('DOMContentLoaded', async () => {
+        // فحص وضع الزائر
+        document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'view') {
                 isViewerMode = true;
@@ -454,13 +507,20 @@
                 document.getElementById('adminBackupSection').style.display = 'none';
                 document.getElementById('viewerNotice').classList.remove('hidden');
 
-                const sharedAlbumId = urlParams.get('album');
-                if (sharedAlbumId) {
-                    await loadFromCloud(sharedAlbumId);
-                    return;
-                }
+                // الاستماع اللحظي للعام فقط من Firebase
+                const checkFirebase = setInterval(() => {
+                    if (window.db && window.onSnapshot && window.collection) {
+                        clearInterval(checkFirebase);
+                        window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
+                            const cloudPosts = snapshot.docs.map(doc => doc.data());
+                            cloudPosts.sort((a, b) => b.id - a.id);
+                            renderPosts(cloudPosts);
+                        });
+                    }
+                }, 200);
+            } else {
+                renderPosts();
             }
-            renderPosts();
         });
     </script>
 </body>
