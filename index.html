@@ -150,7 +150,7 @@
         const SECRET_PIN = "201214";
         let isViewerMode = false;
 
-        // شاشة البداية 10 ثوانٍ
+        // شاشة البداية 5 ثوانٍ
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -158,7 +158,7 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.remove(), 1000);
                 }
-            }, 10000);
+            }, 5000);
         });
 
         if ('serviceWorker' in navigator) {
