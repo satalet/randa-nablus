@@ -20,7 +20,7 @@
     <!-- Firebase SDK (v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
@@ -38,6 +38,7 @@
         window.db = db;
         window.setDoc = setDoc;
         window.getDoc = getDoc;
+        window.getDocs = getDocs;
         window.deleteDoc = deleteDoc;
         window.doc = doc;
         window.collection = collection;
@@ -174,6 +175,7 @@
         let AUTH_HASH = "MjAxMjE5ODFsZWU=";
         let isAdminLoggedIn = false;
         let isViewerMode = false;
+        let globalFriendsPins = [];
 
         function hashString(str) {
             return btoa(encodeURIComponent(str));
@@ -223,6 +225,7 @@
         }
 
         function getLocalFriends() {
+            if (globalFriendsPins && globalFriendsPins.length > 0) return globalFriendsPins;
             try {
                 return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
             } catch(e) {
@@ -231,6 +234,7 @@
         }
 
         function saveLocalFriends(list) {
+            globalFriendsPins = list;
             localStorage.setItem('randa_friends_pins', JSON.stringify(list));
             renderFriendsList();
         }
@@ -315,7 +319,7 @@
             let friends = getLocalFriends();
             
             friends = friends.filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
-            const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
+            const friendObj = { name: name.trim(), pin: String(pin).trim(), key: cleanKey };
             friends.push(friendObj);
 
             saveLocalFriends(friends);
@@ -323,7 +327,7 @@
             if (window.db) {
                 try {
                     await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
-                } catch(e) { console.log("Cloud sync error:", e); }
+                } catch(e) { console.error("Cloud sync error:", e); }
             }
             renderPosts();
         }
@@ -339,7 +343,7 @@
             await saveFriendPin(name, pin);
             document.getElementById('newFriendName').value = '';
             document.getElementById('newFriendPin').value = '';
-            alert(`تم حفظ كود (${name}) وتوثيق تعليقاته بنجاح! 🔒✨`);
+            alert(`تم حفظ كود (${name}) وتوثيق حسابه بنجاح! 🔒✨`);
         };
 
         window.quickVerifyFriend = async function(postId, commentId, friendName) {
@@ -509,20 +513,18 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // دالة فحص التوثيق الشاملة
         function isCommentVerified(c) {
             if (c.isVerified === true) return true;
             const friends = getLocalFriends();
             const nameKey = normalizeText(c.name);
             const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
             
-            if (registeredFriend) {
-                if (c.pin && c.pin === registeredFriend.pin) return true;
+            if (registeredFriend && c.pin && String(c.pin).trim() === String(registeredFriend.pin).trim()) {
+                return true;
             }
             return false;
         }
 
-        // 💬 إضافة تعليق مع التحقق الدقيق من الكود
         window.addComment = async function(postId) {
             const nameInput = document.getElementById(`cName-${postId}`);
             const pinInput = document.getElementById(`cPin-${postId}`);
@@ -539,13 +541,27 @@
             }
 
             const nameKey = normalizeText(nameVal);
+
+            // جلب الأكواد من السحابة للتأكد من أحدث حالة
+            if (window.db) {
+                try {
+                    const snap = await window.getDoc(window.doc(window.db, "friends_pins", nameKey));
+                    if (snap.exists()) {
+                        const cloudPinData = snap.data();
+                        let currentFriends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== nameKey);
+                        currentFriends.push(cloudPinData);
+                        saveLocalFriends(currentFriends);
+                    }
+                } catch(e) {}
+            }
+
             const friends = getLocalFriends();
             const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
 
             let isVerified = false;
 
             if (registeredFriend) {
-                if (registeredFriend.pin === pinVal) {
+                if (String(registeredFriend.pin).trim() === String(pinVal).trim()) {
                     isVerified = true;
                 } else {
                     alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
@@ -939,10 +955,8 @@
 
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
                         const cloudFriends = snapshot.docs.map(doc => doc.data());
-                        if (cloudFriends.length > 0) {
-                            saveLocalFriends(cloudFriends);
-                            renderPosts();
-                        }
+                        saveLocalFriends(cloudFriends);
+                        renderPosts();
                     });
 
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
