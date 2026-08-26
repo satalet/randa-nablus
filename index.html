@@ -342,12 +342,29 @@
             alert(`تم حفظ كود (${name}) وتوثيق تعليقاته بنجاح! 🔒✨`);
         };
 
-        window.quickVerifyFriend = async function(friendName) {
+        window.quickVerifyFriend = async function(postId, commentId, friendName) {
             if (!isAdminLoggedIn) return;
             const pin = prompt(`أدخل الكود السري الخاص بـ (${friendName}):`, '1234');
             if (!pin || !pin.trim()) return;
 
             await saveFriendPin(friendName, pin.trim());
+
+            const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (post && post.comments) {
+                const updatedComments = post.comments.map(c => {
+                    if (c.id === commentId || normalizeText(c.name) === normalizeText(friendName)) {
+                        return { ...c, isVerified: true, pin: pin.trim() };
+                    }
+                    return c;
+                });
+
+                if (window.db) {
+                    try {
+                        await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+                    } catch(e) { console.error("Verify comment sync error:", e); }
+                }
+            }
             alert(`تم توثيق (${friendName}) بنجاح! 🌸✨`);
         };
 
@@ -492,15 +509,15 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // دالة فحص التوثيق الديناميكية
+        // دالة فحص التوثيق الشاملة
         function isCommentVerified(c) {
+            if (c.isVerified === true) return true;
             const friends = getLocalFriends();
             const nameKey = normalizeText(c.name);
             const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
             
             if (registeredFriend) {
                 if (c.pin && c.pin === registeredFriend.pin) return true;
-                if (c.isVerified) return true;
             }
             return false;
         }
@@ -532,7 +549,7 @@
                     isVerified = true;
                 } else {
                     alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
-                    return; // إيقاف إرسال التعليق عند إدخال كود خاطئ
+                    return;
                 }
             }
 
@@ -795,7 +812,7 @@
                 date: 'رسالة خاصة من بابا 🌸',
                 image: 'dad-randa.jpg',
                 ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة الدنيا يا روح أبوكِ ✨',
-                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 대박! 🌸',
+                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단دا. 대박! 🌸',
                 isDad: true
             };
 
@@ -864,7 +881,7 @@
                                             ${(isAdminLoggedIn && !isViewerMode) ? `
                                                 <div class="flex items-center gap-1 mr-2">
                                                     ${!isVerifiedUser ? `
-                                                        <button onclick="quickVerifyFriend('${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق الكود">
+                                                        <button onclick="quickVerifyFriend(${post.id}, ${c.id}, '${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق الكود">
                                                             🔑 توثيق
                                                         </button>
                                                     ` : ''}
@@ -924,6 +941,7 @@
                         const cloudFriends = snapshot.docs.map(doc => doc.data());
                         if (cloudFriends.length > 0) {
                             saveLocalFriends(cloudFriends);
+                            renderPosts();
                         }
                     });
 
