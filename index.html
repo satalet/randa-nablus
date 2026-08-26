@@ -79,7 +79,7 @@
             <h3 class="text-base font-bold text-pink-600 mb-1 flex items-center gap-2">
                 <span>🔒 إدارة أكواد الصديقات</span>
             </h3>
-            <p class="text-xs text-gray-500 mb-4">يمكنك إضافة الكود من هنا مباشرة أو الضغط على زر (🔑 توثيق) بجانب تعليق صديقتك بالأسفل.</p>
+            <p class="text-xs text-gray-500 mb-4">أضيفي كود الصدّيقة هنا أو اضغطي (🔑 توثيق) بجانب تعليقها بالأسفل.</p>
             
             <div class="flex gap-2 mb-3">
                 <input type="text" id="newFriendName" placeholder="اسم الصدّيقة (مثال: سارة)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
@@ -90,7 +90,7 @@
             </button>
 
             <h4 class="text-xs font-bold text-gray-600 mb-2">قائمة الأكواد المعتمدة:</h4>
-            <div id="friendsListContainer" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+            <div id="friendsListContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
         <!-- Add Post Section (Admin Only) -->
@@ -176,7 +176,7 @@
             return btoa(inputPass) === AUTH_HASH;
         }
 
-        // دالة توحيد النصوص العربية لمنع مشاكل الهمزات والمسافات
+        // توحيد النصوص لمنع مشاكل الهمزات والمسافات
         function normalizeText(str) {
             if (!str) return '';
             return str.trim()
@@ -184,6 +184,17 @@
                 .replace(/ة/g, 'ه')
                 .replace(/\s+/g, '')
                 .toLowerCase();
+        }
+
+        // إدارة الأكواد محلياً بالمتصفح
+        function getLocalFriends() {
+            return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
+        }
+
+        function saveLocalFriends(list) {
+            localStorage.setItem('randa_friends_pins', JSON.stringify(list));
+            window.friendsList = list;
+            renderFriendsList();
         }
 
         window.addEventListener('load', () => {
@@ -260,35 +271,47 @@
             }
         }
 
-        // --- 🌸 حفظ كود الصديقة بالسحابة وتحديث منشوراتها فوراً ---
-        async function saveFriendPinToDb(name, pin) {
-            if (!window.db || !name || !pin) return;
+        // --- 🌸 حفظ وتحديث كود الصديقة فوري محلياً وع السحابة ---
+        async function saveFriendPin(name, pin) {
+            if (!name || !pin) return;
             const cleanKey = normalizeText(name);
-            const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
+            let friends = getLocalFriends();
             
-            try {
-                // 1. حفظ الكود بالسحابة
-                await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
+            // تحديث أو إضافة القائمة المحلية
+            friends = friends.filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
+            const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
+            friends.push(friendObj);
+            saveLocalFriends(friends);
 
-                // 2. تحديث جميع تعليقات هذه الصديقة السابقة لتصبح موثوقة تلقائياً!
-                const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-                for (let post of posts) {
-                    if (post.isPublic && post.comments && post.comments.length > 0) {
-                        let hasChanges = false;
-                        const updatedComments = post.comments.map(c => {
-                            if (normalizeText(c.name) === cleanKey) {
-                                hasChanges = true;
-                                return { ...c, isVerified: true };
-                            }
-                            return c;
-                        });
-                        if (hasChanges) {
-                            await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), { comments: updatedComments }, { merge: true });
+            // تحديث المنشورات المحلية فوراً
+            let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            posts = posts.map(post => {
+                if (post.comments && post.comments.length > 0) {
+                    let updated = false;
+                    const updatedComments = post.comments.map(c => {
+                        if (normalizeText(c.name) === cleanKey) {
+                            updated = true;
+                            return { ...c, isVerified: true };
                         }
+                        return c;
+                    });
+                    if (updated) {
+                        const newPost = { ...post, comments: updatedComments };
+                        syncToCloud(newPost);
+                        return newPost;
                     }
                 }
-            } catch(e) {
-                console.error("Error saving friend PIN:", e);
+                return post;
+            });
+
+            localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+            renderPosts();
+
+            // المزامنة مع الفايربيس إن أمكن
+            if (window.db) {
+                try {
+                    await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
+                } catch(e) { console.log("Cloud sync note:", e); }
             }
         }
 
@@ -300,35 +323,67 @@
                 alert('ادخلي اسم الصدّيقة والكود السري! 🌸');
                 return;
             }
-            await saveFriendPinToDb(name, pin);
+            await saveFriendPin(name, pin);
             document.getElementById('newFriendName').value = '';
             document.getElementById('newFriendPin').value = '';
-            alert(`تم حفظ كود (${name}) وتوثيق جميع تعليقاتها بنجاح! 🔒✨`);
+            alert(`تم حفظ كود (${name}) وتوثيق كافة تعليقاتها بنجاح! 🔒✨`);
         };
 
-        // 🔑 التوثيق السريع مباشرة من التعليق
         window.quickVerifyFriend = async function(friendName) {
             if (!isAdminLoggedIn) return;
             const pin = prompt(`أدخلي الكود السري الخاص بـ (${friendName}):`);
             if (!pin || !pin.trim()) return;
 
-            await saveFriendPinToDb(friendName, pin.trim());
-            alert(`تم توثيق (${friendName}) وتنسيق جميع تعليقاتها السابقة بنجاح! 🌸✨`);
+            await saveFriendPin(friendName, pin.trim());
+            alert(`تم توثيق (${friendName}) وتنسيق كافة تعليقاتها بنجاح! 🌸✨`);
         };
 
+        // تعديل الكود من القائمة
+        window.editFriendPin = async function(cleanKey, name, currentPin) {
+            if (!isAdminLoggedIn) return;
+            const newPin = prompt(`أدخلي الكود السري الجديد لـ (${name}):`, currentPin);
+            if (newPin && newPin.trim()) {
+                await saveFriendPin(name, newPin.trim());
+                alert(`تم تحديث كود (${name}) بنجاح! 🔒`);
+            }
+        };
+
+        // حذف الكود من القائمة
         window.deleteFriend = async function(cleanKey, name) {
             if (!isAdminLoggedIn) return;
             if (confirm(`متأكدة بدك تحذفي كود (${name})؟`)) {
-                try {
-                    await window.deleteDoc(window.doc(window.db, "friends_pins", cleanKey));
-                } catch(e) { console.error("Error deleting friend:", e); }
+                let friends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
+                saveLocalFriends(friends);
+
+                // إلغاء التوثيق محلياً والسحابة
+                let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+                posts = posts.map(post => {
+                    if (post.comments) {
+                        const updatedComments = post.comments.map(c => {
+                            if (normalizeText(c.name) === cleanKey) {
+                                return { ...c, isVerified: false };
+                            }
+                            return c;
+                        });
+                        const updatedPost = { ...post, comments: updatedComments };
+                        syncToCloud(updatedPost);
+                        return updatedPost;
+                    }
+                    return post;
+                });
+                localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+                renderPosts();
+
+                if (window.db) {
+                    try { await window.deleteDoc(window.doc(window.db, "friends_pins", cleanKey)); } catch(e){}
+                }
             }
         };
 
         function renderFriendsList() {
             const container = document.getElementById('friendsListContainer');
             if (!container) return;
-            const list = window.friendsList || [];
+            const list = window.friendsList || getLocalFriends();
             if (list.length === 0) {
                 container.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">لا يوجد كود محدد بعد</p>';
                 return;
@@ -336,7 +391,10 @@
             container.innerHTML = list.map(f => `
                 <div class="flex justify-between items-center bg-pink-50 p-2.5 rounded-xl text-xs border border-pink-100 shadow-sm">
                     <span class="font-bold text-pink-700">🌸 ${f.name} <span class="text-gray-400 font-normal mr-1">(الكود: ${f.pin})</span></span>
-                    <button onclick="deleteFriend('${f.key || normalizeText(f.name)}', '${f.name}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">حذف 🗑️</button>
+                    <div class="flex gap-1">
+                        <button onclick="editFriendPin('${f.key || normalizeText(f.name)}', '${f.name}', '${f.pin}')" class="text-blue-600 font-bold px-2 py-0.5 rounded-lg hover:bg-blue-50 transition">✏️ تعديل</button>
+                        <button onclick="deleteFriend('${f.key || normalizeText(f.name)}', '${f.name}')" class="text-red-500 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">🗑️ حذف</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -441,7 +499,7 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // 💬 إضافة التعليقات والتحقق الذكي
+        // 💬 إضافة التعليق والتحقق
         window.addComment = async function(postId) {
             if (!window.db) return;
             const nameInput = document.getElementById(`cName-${postId}`);
@@ -458,7 +516,7 @@
                 return;
             }
 
-            const friends = window.friendsList || [];
+            const friends = window.friendsList || getLocalFriends();
             const nameKey = normalizeText(nameVal);
             const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
             
@@ -839,13 +897,18 @@
             }
             updateAdminUI();
 
+            // تحميل قائمة الأكواد المحلية فوراً
+            renderFriendsList();
+
             const checkFirebase = setInterval(() => {
                 if (window.db && window.onSnapshot && window.collection) {
                     clearInterval(checkFirebase);
                     
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
-                        window.friendsList = snapshot.docs.map(doc => doc.data());
-                        renderFriendsList();
+                        const cloudFriends = snapshot.docs.map(doc => doc.data());
+                        if (cloudFriends.length > 0) {
+                            saveLocalFriends(cloudFriends);
+                        }
                     });
 
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
