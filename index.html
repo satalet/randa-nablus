@@ -175,7 +175,7 @@
         let AUTH_HASH = "MjAxMjE5ODFsZWU=";
         let isAdminLoggedIn = false;
         let isViewerMode = false;
-        let globalFriendsPins = [];
+        let friendsPinsMap = {};
 
         function hashString(str) {
             return btoa(encodeURIComponent(str));
@@ -216,7 +216,7 @@
 
         function normalizeText(str) {
             if (!str) return '';
-            return str.trim()
+            return String(str).trim()
                 .replace(/[أإآ]/g, 'ا')
                 .replace(/ى/g, 'ي')
                 .replace(/ة/g, 'ه')
@@ -224,19 +224,12 @@
                 .toLowerCase();
         }
 
-        function getLocalFriends() {
-            if (globalFriendsPins && globalFriendsPins.length > 0) return globalFriendsPins;
-            try {
-                return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
-            } catch(e) {
-                return [];
-            }
+        function getSafeDocId(str) {
+            return encodeURIComponent(normalizeText(str)).replace(/\./g, '%2E');
         }
 
-        function saveLocalFriends(list) {
-            globalFriendsPins = list;
-            localStorage.setItem('randa_friends_pins', JSON.stringify(list));
-            renderFriendsList();
+        function getLocalFriends() {
+            return Object.values(friendsPinsMap);
         }
 
         window.addEventListener('load', () => {
@@ -246,13 +239,16 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.remove(), 1000);
                 }
-            }, 5000);
+            }, 3000);
         });
 
+        // مسح تسجيل السيرفس ووركر لمنع تكييش الكود القديم
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log('Service Worker Registered'))
-            .catch(err => console.log('Service Worker Error', err));
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
         }
 
         const preview = document.getElementById('preview');
@@ -316,18 +312,16 @@
         async function saveFriendPin(name, pin) {
             if (!name || !pin) return;
             const cleanKey = normalizeText(name);
-            let friends = getLocalFriends();
-            
-            friends = friends.filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
+            const docId = getSafeDocId(name);
             const friendObj = { name: name.trim(), pin: String(pin).trim(), key: cleanKey };
-            friends.push(friendObj);
-
-            saveLocalFriends(friends);
+            
+            friendsPinsMap[cleanKey] = friendObj;
+            renderFriendsList();
 
             if (window.db) {
                 try {
-                    await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
-                } catch(e) { console.error("Cloud sync error:", e); }
+                    await window.setDoc(window.doc(window.db, "friends_pins", docId), friendObj);
+                } catch(e) { console.error("Cloud friend sync error:", e); }
             }
             renderPosts();
         }
@@ -343,7 +337,7 @@
             await saveFriendPin(name, pin);
             document.getElementById('newFriendName').value = '';
             document.getElementById('newFriendPin').value = '';
-            alert(`تم حفظ كود (${name}) وتوثيق حسابه بنجاح! 🔒✨`);
+            alert(`تم حفظ كود (${name}) وتوثيقه بنجاح! 🔒✨`);
         };
 
         window.quickVerifyFriend = async function(postId, commentId, friendName) {
@@ -353,7 +347,7 @@
 
             await saveFriendPin(friendName, pin.trim());
 
-            const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const posts = window.currentDisplayedPosts || [];
             const post = posts.find(p => String(p.id) === String(postId));
             if (post && post.comments) {
                 const updatedComments = post.comments.map(c => {
@@ -372,7 +366,7 @@
             alert(`تم توثيق (${friendName}) بنجاح! 🌸✨`);
         };
 
-        window.editFriendPin = async function(cleanKey, name, currentPin) {
+        window.editFriendPin = async function(name, currentPin) {
             if (!isAdminLoggedIn) return;
             const newPin = prompt(`أدخل الكود السري الجديد لـ (${name}):`, currentPin);
             if (newPin && newPin.trim()) {
@@ -381,14 +375,16 @@
             }
         };
 
-        window.deleteFriend = async function(cleanKey, name) {
+        window.deleteFriend = async function(name) {
             if (!isAdminLoggedIn) return;
             if (confirm(`هل أنت متأكد من حذف كود (${name})؟`)) {
-                let friends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
-                saveLocalFriends(friends);
+                const cleanKey = normalizeText(name);
+                const docId = getSafeDocId(name);
+                delete friendsPinsMap[cleanKey];
+                renderFriendsList();
 
                 if (window.db) {
-                    try { await window.deleteDoc(window.doc(window.db, "friends_pins", cleanKey)); } catch(e){}
+                    try { await window.deleteDoc(window.doc(window.db, "friends_pins", docId)); } catch(e){}
                 }
                 renderPosts();
             }
@@ -406,8 +402,8 @@
                 <div class="flex justify-between items-center bg-pink-50 p-2.5 rounded-xl text-xs border border-pink-100 shadow-sm">
                     <span class="font-bold text-pink-700">🌸 ${f.name} <span class="text-gray-400 font-normal mr-1">(الكود: ${f.pin})</span></span>
                     <div class="flex gap-1">
-                        <button onclick="editFriendPin('${f.key || normalizeText(f.name)}', '${f.name}', '${f.pin}')" class="text-blue-600 font-bold px-2 py-0.5 rounded-lg hover:bg-blue-50 transition">✏️ تعديل</button>
-                        <button onclick="deleteFriend('${f.key || normalizeText(f.name)}', '${f.name}')" class="text-red-500 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">🗑️ حذف</button>
+                        <button onclick="editFriendPin('${f.name}', '${f.pin}')" class="text-blue-600 font-bold px-2 py-0.5 rounded-lg hover:bg-blue-50 transition">✏️ تعديل</button>
+                        <button onclick="deleteFriend('${f.name}')" class="text-red-500 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">🗑️ حذف</button>
                     </div>
                 </div>
             `).join('');
@@ -504,7 +500,7 @@
 
         window.likePost = async function(postId) {
             if (!window.db) return;
-            const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const posts = window.currentDisplayedPosts || [];
             const post = posts.find(p => String(p.id) === String(postId));
             const currentLikes = (post && post.likes) ? post.likes + 1 : 1;
 
@@ -515,9 +511,8 @@
 
         function isCommentVerified(c) {
             if (c.isVerified === true) return true;
-            const friends = getLocalFriends();
             const nameKey = normalizeText(c.name);
-            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
+            const registeredFriend = friendsPinsMap[nameKey];
             
             if (registeredFriend && c.pin && String(c.pin).trim() === String(registeredFriend.pin).trim()) {
                 return true;
@@ -541,23 +536,19 @@
             }
 
             const nameKey = normalizeText(nameVal);
+            const docId = getSafeDocId(nameVal);
 
-            // جلب الأكواد من السحابة للتأكد من أحدث حالة
+            // جلب أحدث كود مباشرة من فايربيس للمطابقة الحية
             if (window.db) {
                 try {
-                    const snap = await window.getDoc(window.doc(window.db, "friends_pins", nameKey));
+                    const snap = await window.getDoc(window.doc(window.db, "friends_pins", docId));
                     if (snap.exists()) {
-                        const cloudPinData = snap.data();
-                        let currentFriends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== nameKey);
-                        currentFriends.push(cloudPinData);
-                        saveLocalFriends(currentFriends);
+                        friendsPinsMap[nameKey] = snap.data();
                     }
-                } catch(e) {}
+                } catch(e) { console.error("Verify pin fetch error:", e); }
             }
 
-            const friends = getLocalFriends();
-            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
-
+            const registeredFriend = friendsPinsMap[nameKey];
             let isVerified = false;
 
             if (registeredFriend) {
@@ -581,7 +572,7 @@
                 date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
             };
 
-            const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const posts = window.currentDisplayedPosts || [];
             const post = posts.find(p => String(p.id) === String(postId));
             const existingComments = (post && post.comments && Array.isArray(post.comments)) ? post.comments : [];
             const updatedComments = [...existingComments, newComment];
@@ -598,7 +589,7 @@
             if (!isAdminLoggedIn) return;
             if (!confirm('هل أنت متأكد من حذف هذا التعليق؟ 🌸')) return;
 
-            const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const posts = window.currentDisplayedPosts || [];
             const post = posts.find(p => String(p.id) === String(postId));
             if (!post || !post.comments) return;
 
@@ -818,7 +809,7 @@
         };
 
         function renderPosts(customPosts = null) {
-            const posts = customPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const posts = customPosts || window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             window.currentDisplayedPosts = posts;
             
             const savedFriendName = localStorage.getItem('randa_friend_name') || '';
@@ -940,7 +931,6 @@
                 isAdminLoggedIn = true;
             }
             updateAdminUI();
-            renderFriendsList();
 
             const checkFirebase = setInterval(() => {
                 if (window.db && window.onSnapshot && window.collection && window.doc) {
@@ -953,12 +943,20 @@
                         }
                     });
 
+                    // مزامنة الأكواد لحظياً
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
-                        const cloudFriends = snapshot.docs.map(doc => doc.data());
-                        saveLocalFriends(cloudFriends);
+                        friendsPinsMap = {};
+                        snapshot.docs.forEach(doc => {
+                            const data = doc.data();
+                            if (data && data.name) {
+                                friendsPinsMap[normalizeText(data.name)] = data;
+                            }
+                        });
+                        renderFriendsList();
                         renderPosts();
                     });
 
+                    // مزامنة المنشورات والتعليقات
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
                         const cloudPosts = snapshot.docs.map(doc => doc.data());
                         cloudPosts.sort((a, b) => b.id - a.id);
@@ -987,7 +985,7 @@
 
                             localPosts.sort((a, b) => b.id - a.id);
                             localStorage.setItem('randa_diary_posts', JSON.stringify(localPosts));
-                            renderPosts();
+                            renderPosts(localPosts);
                         }
                     });
                 }
