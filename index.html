@@ -302,7 +302,7 @@
             if (!window.db) return;
             try {
                 if (post.isPublic) {
-                    await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), post);
+                    await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), post, { merge: true });
                 } else {
                     await window.deleteDoc(window.doc(window.db, "public_posts", String(post.id)));
                 }
@@ -320,79 +320,127 @@
             }
         }
 
-      saveBtn.addEventListener('click', async () => {
-    if (!isAdminLoggedIn) return;
-    if (!currentImageBase64 && !arText.value && !koText.value) {
-        alert('اكتبي إشي أو حطي صورة أول!');
-        return;
-    }
-    
-    // 🌸 تعديل الترجمة التلقائية: إذا النص العربي مكتوب ومربع الكوري فاضي، يترجم فوراً قبل النشر
-    if (arText.value.trim() && !koText.value.trim()) {
-        const spanText = saveBtn.querySelector('span');
-        const oldText = spanText.textContent;
-        spanText.textContent = 'جاري الترجمة والنشر... ⏳';
-        saveBtn.disabled = true;
+        // ❤️ دالة اللايكات اللحظية
+        window.likePost = async function(postId) {
+            if (!window.db) return;
+            const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const post = posts.find(p => String(p.id) === String(postId));
+            const currentLikes = (post && post.likes) ? post.likes + 1 : 1;
 
-        try {
-            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(arText.value.trim())}&langpair=ar|ko`);
-            const data = await response.json();
-            if (data && data.responseData && data.responseData.translatedText) {
-                koText.value = data.responseData.translatedText;
+            try {
+                await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { likes: currentLikes }, { merge: true });
+            } catch(e) { console.error("Like error:", e); }
+        };
+
+        // 💬 دالة إضافة التعليقات اللحظية وحفظ الاسم
+        window.addComment = async function(postId) {
+            if (!window.db) return;
+            const nameInput = document.getElementById(`cName-${postId}`);
+            const textInput = document.getElementById(`cText-${postId}`);
+            
+            if (!nameInput || !textInput) return;
+            const nameVal = nameInput.value.trim();
+            const textVal = textInput.value.trim();
+
+            if (!nameVal || !textVal) {
+                alert('اكتبي اسمك والتعليق أولاً 🌸');
+                return;
             }
-        } catch (error) {
-            console.error('Translation error:', error);
-        }
 
-        saveBtn.disabled = false;
-        spanText.textContent = oldText;
-    }
+            // 💾 حفظ اسم الصديقة بالمتصفح لاستخدامه مستقبلاً
+            localStorage.setItem('randa_friend_name', nameVal);
 
-    const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
-    let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-    let updatedPost = null;
+            const newComment = {
+                name: nameVal,
+                text: textVal,
+                date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
+            };
 
-    if (editingId) {
-        posts = posts.map(p => {
-            if (p.id === editingId) {
+            const posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const post = posts.find(p => String(p.id) === String(postId));
+            const existingComments = (post && post.comments && Array.isArray(post.comments)) ? post.comments : [];
+            const updatedComments = [...existingComments, newComment];
+
+            try {
+                await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+                textInput.value = '';
+            } catch(e) { console.error("Comment error:", e); }
+        };
+
+        saveBtn.addEventListener('click', async () => {
+            if (!isAdminLoggedIn) return;
+            if (!currentImageBase64 && !arText.value && !koText.value) {
+                alert('اكتبي إشي أو حطي صورة أول!');
+                return;
+            }
+            
+            if (arText.value.trim() && !koText.value.trim()) {
+                const spanText = saveBtn.querySelector('span');
+                const oldText = spanText.textContent;
+                spanText.textContent = 'جاري الترجمة والنشر... ⏳';
+                saveBtn.disabled = true;
+
+                try {
+                    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(arText.value.trim())}&langpair=ar|ko`);
+                    const data = await response.json();
+                    if (data && data.responseData && data.responseData.translatedText) {
+                        koText.value = data.responseData.translatedText;
+                    }
+                } catch (error) {
+                    console.error('Translation error:', error);
+                }
+
+                saveBtn.disabled = false;
+                spanText.textContent = oldText;
+            }
+
+            const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
+            let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            let updatedPost = null;
+
+            if (editingId) {
+                posts = posts.map(p => {
+                    if (p.id === editingId) {
+                        updatedPost = {
+                            ...p,
+                            ar: arText.value,
+                            ko: koText.value,
+                            image: currentImageBase64 || p.image,
+                            isPublic: isPublicChoice
+                        };
+                        return updatedPost;
+                    }
+                    return p;
+                });
+                editingId = null;
+                formTitle.textContent = 'إضافة يومية جديدة ✨';
+                saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
+                cancelEditBtn.classList.add('hidden');
+            } else {
                 updatedPost = {
-                    ...p,
+                    id: Date.now(),
+                    date: new Date().toLocaleString('ar-PS'),
+                    image: currentImageBase64,
                     ar: arText.value,
                     ko: koText.value,
-                    image: currentImageBase64 || p.image,
-                    isPublic: isPublicChoice
+                    isPublic: isPublicChoice,
+                    likes: 0,
+                    comments: []
                 };
-                return updatedPost;
+                posts.unshift(updatedPost);
             }
-            return p;
-        });
-        editingId = null;
-        formTitle.textContent = 'إضافة يومية جديدة ✨';
-        saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
-        cancelEditBtn.classList.add('hidden');
-    } else {
-        updatedPost = {
-            id: Date.now(),
-            date: new Date().toLocaleString('ar-PS'),
-            image: currentImageBase64,
-            ar: arText.value,
-            ko: koText.value,
-            isPublic: isPublicChoice
-        };
-        posts.unshift(updatedPost);
-    }
 
-    localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
-    await syncToCloud(updatedPost);
-    
-    currentImageBase64 = ''; 
-    preview.classList.add('hidden'); 
-    preview.src = ''; 
-    arText.value = ''; 
-    koText.value = '';
-    document.getElementById('privPrivate').checked = true;
-    renderPosts();
-});
+            localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
+            await syncToCloud(updatedPost);
+            
+            currentImageBase64 = ''; 
+            preview.classList.add('hidden'); 
+            preview.src = ''; 
+            arText.value = ''; 
+            koText.value = '';
+            document.getElementById('privPrivate').checked = true;
+            renderPosts();
+        });
 
         cancelEditBtn.addEventListener('click', () => {
             editingId = null;
@@ -529,12 +577,13 @@
 
         function renderPosts(customPosts = null) {
             const posts = customPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+            const savedFriendName = localStorage.getItem('randa_friend_name') || '';
             
             const dadSurprisePost = {
                 date: 'رسالة خاصة من بابا 🌸',
                 image: 'dad-randa.jpg',
                 ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة نابلس يا روح أبوكِ ✨',
-                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단دا. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
+                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
                 isDad: true
             };
 
@@ -569,6 +618,42 @@
                                 <button onclick="speakKorean('${post.ko.replace(/'/g, "\\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
                             </div>
                         ` : ''}
+
+                        <!-- ❤️ قسم اللايكات والتعليقات للمنشورات العامة -->
+                        ${(!post.isDad && post.isPublic) ? `
+                            <div class="mt-4 pt-3 border-t border-pink-100 flex items-center justify-between">
+                                <button onclick="likePost(${post.id})" class="flex items-center gap-1.5 bg-pink-50 hover:bg-pink-100 text-pink-600 px-3 py-1.5 rounded-full text-xs font-bold transition">
+                                    ❤️ <span>${post.likes || 0}</span> لايك
+                                </button>
+                                <span class="text-xs text-gray-400 font-bold">${(post.comments || []).length} تعليق</span>
+                            </div>
+
+                            <!-- قائمة التعليقات -->
+                            ${(post.comments && post.comments.length > 0) ? `
+                                <div class="mt-3 space-y-2 bg-pink-50/50 p-3 rounded-2xl max-h-40 overflow-y-auto">
+                                    ${post.comments.map(c => `
+                                        <div class="text-xs bg-white p-2.5 rounded-xl shadow-sm border border-pink-100 flex flex-col">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-bold text-pink-600">${c.name} 🌸</span>
+                                                <span class="text-[9px] text-gray-400">${c.date || ''}</span>
+                                            </div>
+                                            <span class="text-gray-700 font-medium">${c.text}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            <!-- مربع إضافة تعليق -->
+                            <div class="mt-3 flex flex-col gap-2">
+                                <div class="flex gap-2">
+                                    <input type="text" id="cName-${post.id}" value="${savedFriendName}" placeholder="اسمك 🌸" class="w-1/3 text-xs p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
+                                    <input type="text" id="cText-${post.id}" placeholder="اكتبي تعليقك..." class="w-2/3 text-xs p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
+                                </div>
+                                <button onclick="addComment(${post.id})" class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
+                                    إرسال التعليق 💬
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
@@ -596,10 +681,8 @@
                         cloudPosts.sort((a, b) => b.id - a.id);
 
                         if (!isAdminLoggedIn) {
-                            // إذا مش أدمن: اعرض السحاب فورا وبشكل لحظي حقيقي
                             renderPosts(cloudPosts);
                         } else {
-                            // إذا أدمن: ادمج محلياً وتأكد من تحديث الحالة فوراً
                             let localPosts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                             
                             cloudPosts.forEach(cPost => {
