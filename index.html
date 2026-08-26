@@ -45,12 +45,12 @@
 </head>
 <body class="pb-20">
 
-    <!-- شريط وضع الزائر (لصديقات رندة) -->
+    <!-- شريط وضع الزائر -->
     <div id="viewerNotice" class="hidden bg-pink-500 text-white text-center py-2 px-4 font-bold text-sm sticky top-0 z-50 shadow-md">
         🌸 أهلاً بكِ! أنتِ تتصفحين ألبوم رندة العام 🌸
     </div>
 
-    <!-- شاشة البداية (5 ثوانٍ) -->
+    <!-- شاشة البداية -->
     <div id="splashScreen" class="fixed inset-0 z-50 bg-pink-500 flex flex-col items-center justify-center text-white">
         <img src="splash.jpg" alt="رندة في نابلس" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
         <h1 class="text-4xl font-bold mb-2">يوميات رندة</h1>
@@ -67,7 +67,6 @@
         <h1 class="text-2xl font-bold">يوميات رندة 🌸</h1>
         <p class="text-sm opacity-90">ديباك! توثيق أحلى اللحظات</p>
 
-        <!-- زر تسجيل الدخول / الخروج للأدمن -->
         <button id="authBtn" onclick="handleAuthToggle()" class="absolute left-3 top-4 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
             🔑 دخول الأدمن
         </button>
@@ -75,18 +74,18 @@
 
     <main class="p-4 max-w-md mx-auto mt-2">
 
-        <!-- لوحة إدارة أكواد الصديقات (خاص بالأدمن فقط) -->
+        <!-- لوحة إدارة أكواد الصديقات -->
         <div id="adminFriendsPanel" class="hidden bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h3 class="text-base font-bold text-pink-600 mb-1 flex items-center gap-2">
                 <span>🔒 إدارة أكواد الصديقات</span>
             </h3>
-            <p class="text-xs text-gray-500 mb-4">حددي اسم الصدّيقة وكودها الخاص لمنع أي أحد من التحدث باسمها.</p>
+            <p class="text-xs text-gray-500 mb-4">يمكنك إضافة الكود من هنا مباشرة أو الضغط على زر (🔑 توثيق) بجانب تعليق صديقتك بالأسفل.</p>
             
             <div class="flex gap-2 mb-3">
                 <input type="text" id="newFriendName" placeholder="اسم الصدّيقة (مثال: سارة)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
                 <input type="text" id="newFriendPin" placeholder="الكود (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
             </div>
-            <button onclick="addFriend()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
+            <button onclick="addFriendFromPanel()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
                 حفظ الصدّيقة والكود 🌸
             </button>
 
@@ -114,19 +113,16 @@
 
             <img id="preview" class="hidden w-full h-56 object-cover rounded-2xl mb-4 shadow-sm border border-gray-100">
 
-            <!-- Arabic Text -->
             <div class="relative mb-3">
                 <textarea id="arText" rows="2" class="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-gray-700 bg-gray-50" placeholder="اكتبي يومياتك بالعربي أو احكيها بصوتك..."></textarea>
                 <button type="button" id="micBtn" class="absolute left-2 bottom-3 bg-pink-500 text-white p-2 rounded-full shadow hover:bg-pink-600 transition flex items-center justify-center" title="احكي بالعربي">🎤</button>
             </div>
             <div id="micStatus" class="text-xs text-pink-500 hidden mb-3 font-bold text-center">جاري الاستماع... احكي براحتك!</div>
 
-            <!-- Korean Text -->
             <div class="relative mb-4">
                 <textarea id="koText" rows="2" class="w-full p-4 border border-pink-200 bg-pink-50 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-left font-medium text-pink-900" dir="ltr" placeholder="الترجمة الكورية رح تطلع هون..."></textarea>
             </div>
 
-            <!-- خيار الخصوصية: خاص أم عام -->
             <div class="mb-4 bg-pink-50 p-3 rounded-2xl border border-pink-100">
                 <label class="block text-xs font-bold text-pink-600 mb-2">نوع النشر:</label>
                 <div class="flex gap-2">
@@ -145,7 +141,6 @@
                 </div>
             </div>
 
-            <!-- Submit Button -->
             <button id="saveBtn" class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-md hover:opacity-90 transition text-lg flex justify-center items-center gap-2">
                 <span>نشر في اليوميات</span> 🚀
             </button>
@@ -179,6 +174,16 @@
 
         function verifyPassword(inputPass) {
             return btoa(inputPass) === AUTH_HASH;
+        }
+
+        // دالة توحيد النصوص العربية لمنع مشاكل الهمزات والمسافات
+        function normalizeText(str) {
+            if (!str) return '';
+            return str.trim()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/\s+/g, '')
+                .toLowerCase();
         }
 
         window.addEventListener('load', () => {
@@ -255,8 +260,39 @@
             }
         }
 
-        // --- 🌸 دوال إدارة الصديقات (خاص بالأدمن) ---
-        window.addFriend = async function() {
+        // --- 🌸 حفظ كود الصديقة بالسحابة وتحديث منشوراتها فوراً ---
+        async function saveFriendPinToDb(name, pin) {
+            if (!window.db || !name || !pin) return;
+            const cleanKey = normalizeText(name);
+            const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
+            
+            try {
+                // 1. حفظ الكود بالسحابة
+                await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
+
+                // 2. تحديث جميع تعليقات هذه الصديقة السابقة لتصبح موثوقة تلقائياً!
+                const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
+                for (let post of posts) {
+                    if (post.isPublic && post.comments && post.comments.length > 0) {
+                        let hasChanges = false;
+                        const updatedComments = post.comments.map(c => {
+                            if (normalizeText(c.name) === cleanKey) {
+                                hasChanges = true;
+                                return { ...c, isVerified: true };
+                            }
+                            return c;
+                        });
+                        if (hasChanges) {
+                            await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), { comments: updatedComments }, { merge: true });
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error("Error saving friend PIN:", e);
+            }
+        }
+
+        window.addFriendFromPanel = async function() {
             if (!isAdminLoggedIn) return;
             const name = document.getElementById('newFriendName').value.trim();
             const pin = document.getElementById('newFriendPin').value.trim();
@@ -264,19 +300,27 @@
                 alert('ادخلي اسم الصدّيقة والكود السري! 🌸');
                 return;
             }
-            try {
-                await window.setDoc(window.doc(window.db, "friends_pins", name), { name, pin });
-                document.getElementById('newFriendName').value = '';
-                document.getElementById('newFriendPin').value = '';
-                alert(`تم حفظ كود (${name}) بنجاح! 🔒✨`);
-            } catch(e) { console.error("Error adding friend:", e); }
+            await saveFriendPinToDb(name, pin);
+            document.getElementById('newFriendName').value = '';
+            document.getElementById('newFriendPin').value = '';
+            alert(`تم حفظ كود (${name}) وتوثيق جميع تعليقاتها بنجاح! 🔒✨`);
         };
 
-        window.deleteFriend = async function(name) {
+        // 🔑 التوثيق السريع مباشرة من التعليق
+        window.quickVerifyFriend = async function(friendName) {
+            if (!isAdminLoggedIn) return;
+            const pin = prompt(`أدخلي الكود السري الخاص بـ (${friendName}):`);
+            if (!pin || !pin.trim()) return;
+
+            await saveFriendPinToDb(friendName, pin.trim());
+            alert(`تم توثيق (${friendName}) وتنسيق جميع تعليقاتها السابقة بنجاح! 🌸✨`);
+        };
+
+        window.deleteFriend = async function(cleanKey, name) {
             if (!isAdminLoggedIn) return;
             if (confirm(`متأكدة بدك تحذفي كود (${name})؟`)) {
                 try {
-                    await window.deleteDoc(window.doc(window.db, "friends_pins", name));
+                    await window.deleteDoc(window.doc(window.db, "friends_pins", cleanKey));
                 } catch(e) { console.error("Error deleting friend:", e); }
             }
         };
@@ -292,7 +336,7 @@
             container.innerHTML = list.map(f => `
                 <div class="flex justify-between items-center bg-pink-50 p-2.5 rounded-xl text-xs border border-pink-100 shadow-sm">
                     <span class="font-bold text-pink-700">🌸 ${f.name} <span class="text-gray-400 font-normal mr-1">(الكود: ${f.pin})</span></span>
-                    <button onclick="deleteFriend('${f.name}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">حذف 🗑️</button>
+                    <button onclick="deleteFriend('${f.key || normalizeText(f.name)}', '${f.name}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">حذف 🗑️</button>
                 </div>
             `).join('');
         }
@@ -397,7 +441,7 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // 💬 دالة إضافة التعليقات الموثوقة المحمية بالأكواد
+        // 💬 إضافة التعليقات والتحقق الذكي
         window.addComment = async function(postId) {
             if (!window.db) return;
             const nameInput = document.getElementById(`cName-${postId}`);
@@ -414,9 +458,9 @@
                 return;
             }
 
-            // التثبت من أكواد الصديقات
             const friends = window.friendsList || [];
-            const registeredFriend = friends.find(f => f.name.trim().toLowerCase() === nameVal.toLowerCase());
+            const nameKey = normalizeText(nameVal);
+            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
             
             let isVerified = false;
 
@@ -428,7 +472,6 @@
                 isVerified = true;
             }
 
-            // حفظ الاسم والكود بالمتصفح لاستخدامهما مستقبلاً تلقائياً
             localStorage.setItem('randa_friend_name', nameVal);
             if (pinVal) localStorage.setItem('randa_friend_pin', pinVal);
 
@@ -721,7 +764,7 @@
                             </div>
                         ` : ''}
 
-                        <!-- ❤️ قسم اللايكات والتعليقات للمنشورات العامة -->
+                        <!-- ❤️ قسم اللايكات والتعليقات -->
                         ${(!post.isDad && post.isPublic) ? `
                             <div class="mt-4 pt-3 border-t border-pink-100 flex items-center justify-between">
                                 <button onclick="likePost(${post.id})" class="flex items-center gap-1.5 bg-pink-50 hover:bg-pink-100 text-pink-600 px-3 py-1.5 rounded-full text-xs font-bold transition">
@@ -730,7 +773,7 @@
                                 <span class="text-xs text-gray-400 font-bold">${(post.comments || []).length} تعليق</span>
                             </div>
 
-                            <!-- قائمة التعليقات مع شارات التوثيق -->
+                            <!-- قائمة التعليقات -->
                             ${(post.comments && post.comments.length > 0) ? `
                                 <div class="mt-3 space-y-2 bg-pink-50/50 p-3 rounded-2xl max-h-48 overflow-y-auto">
                                     ${post.comments.map(c => `
@@ -748,17 +791,25 @@
                                                 <span class="text-gray-700 font-medium mr-1">${c.text}</span>
                                             </div>
                                             
+                                            <!-- أزرار الأدمن بجانب كل تعليق -->
                                             ${(isAdminLoggedIn && !isViewerMode) ? `
-                                                <button onclick="deleteComment(${post.id}, ${c.id})" class="text-red-400 hover:text-red-600 p-1 mr-1 text-sm transition" title="حذف التعليق">
-                                                    🗑️
-                                                </button>
+                                                <div class="flex items-center gap-1 mr-2">
+                                                    ${!c.isVerified ? `
+                                                        <button onclick="quickVerifyFriend('${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق وإعطاء كود">
+                                                            🔑 توثيق
+                                                        </button>
+                                                    ` : ''}
+                                                    <button onclick="deleteComment(${post.id}, ${c.id})" class="text-red-400 hover:text-red-600 p-1 text-sm transition" title="حذف التعليق">
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             ` : ''}
                                         </div>
                                     `).join('')}
                                 </div>
                             ` : ''}
 
-                            <!-- مربع إضافة تعليق معدّل يدعم الأكواد -->
+                            <!-- مربع إضافة تعليق -->
                             <div class="mt-3 flex flex-col gap-2">
                                 <div class="flex gap-2">
                                     <input type="text" id="cName-${post.id}" value="${savedFriendName}" placeholder="اسمك 🌸" class="flex-1 text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
@@ -788,18 +839,15 @@
             }
             updateAdminUI();
 
-            // الاستماع الحي والمباشر لليوميات وأكواد الصديقات من الفايربيس
             const checkFirebase = setInterval(() => {
                 if (window.db && window.onSnapshot && window.collection) {
                     clearInterval(checkFirebase);
                     
-                    // 1. مزامنة الأكواد
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
                         window.friendsList = snapshot.docs.map(doc => doc.data());
                         renderFriendsList();
                     });
 
-                    // 2. مزامنة اليوميات
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
                         const cloudPosts = snapshot.docs.map(doc => doc.data());
                         cloudPosts.sort((a, b) => b.id - a.id);
