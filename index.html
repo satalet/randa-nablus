@@ -83,7 +83,7 @@
             <p class="text-xs text-gray-500 mb-4">أضف الاسم والكود المخصص هنا أو اضغط (🔑 توثيق) بجانب التعليق بالأسفل.</p>
             
             <div class="flex gap-2 mb-3">
-                <input type="text" id="newFriendName" placeholder="الاسم (مثال: محمد ابو باسم)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
+                <input type="text" id="newFriendName" placeholder="الاسم (مثال: ابو باسم)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
                 <input type="text" id="newFriendPin" placeholder="الكود السري (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
             </div>
             <button onclick="addFriendFromPanel()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
@@ -174,7 +174,6 @@
         let AUTH_HASH = "MjAxMjE5ODFsZWU=";
         let isAdminLoggedIn = false;
         let isViewerMode = false;
-        window.friendsList = [];
 
         function hashString(str) {
             return btoa(encodeURIComponent(str));
@@ -210,25 +209,29 @@
                 } catch(e) { console.error("Cloud pass sync error:", e); }
             }
 
-            alert(`تم تغيير كلمة المرور وتشفيرها بنجاح! 🔐\n\nكود التشفير الجديد للمشروع هو:\n${encryptedHash}`);
+            alert(`تم تغيير كلمة المرور وتشفيرها بنجاح! 🔐`);
         };
 
         function normalizeText(str) {
             if (!str) return '';
             return str.trim()
                 .replace(/[أإآ]/g, 'ا')
+                .replace(/ى/g, 'ي')
                 .replace(/ة/g, 'ه')
-                .replace(/\s+/g, '')
+                .replace(/\s+/g, ' ')
                 .toLowerCase();
         }
 
         function getLocalFriends() {
-            return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
+            try {
+                return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
+            } catch(e) {
+                return [];
+            }
         }
 
         function saveLocalFriends(list) {
             localStorage.setItem('randa_friends_pins', JSON.stringify(list));
-            window.friendsList = list;
             renderFriendsList();
         }
 
@@ -314,37 +317,15 @@
             friends = friends.filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
             const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
             friends.push(friendObj);
+
             saveLocalFriends(friends);
-
-            // تحديث كافة تعليقات هذا الاسم فوراً
-            let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-            posts = posts.map(post => {
-                if (post.comments && post.comments.length > 0) {
-                    let updated = false;
-                    const updatedComments = post.comments.map(c => {
-                        if (normalizeText(c.name) === cleanKey) {
-                            updated = true;
-                            return { ...c, isVerified: true };
-                        }
-                        return c;
-                    });
-                    if (updated) {
-                        const newPost = { ...post, comments: updatedComments };
-                        syncToCloud(newPost);
-                        return newPost;
-                    }
-                }
-                return post;
-            });
-
-            localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
-            renderPosts();
 
             if (window.db) {
                 try {
                     await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
-                } catch(e) { console.log("Cloud sync note:", e); }
+                } catch(e) { console.log("Cloud sync error:", e); }
             }
+            renderPosts();
         }
 
         window.addFriendFromPanel = async function() {
@@ -358,7 +339,7 @@
             await saveFriendPin(name, pin);
             document.getElementById('newFriendName').value = '';
             document.getElementById('newFriendPin').value = '';
-            alert(`تم حفظ كود (${name}) وتوثيق كافة تعليقاته بنجاح! 🔒✨`);
+            alert(`تم حفظ كود (${name}) وتوثيق تعليقاته بنجاح! 🔒✨`);
         };
 
         window.quickVerifyFriend = async function(friendName) {
@@ -367,7 +348,7 @@
             if (!pin || !pin.trim()) return;
 
             await saveFriendPin(friendName, pin.trim());
-            alert(`تم توثيق (${friendName}) وتحديث جميع تعليقاته بنجاح! 🌸✨`);
+            alert(`تم توثيق (${friendName}) بنجاح! 🌸✨`);
         };
 
         window.editFriendPin = async function(cleanKey, name, currentPin) {
@@ -385,35 +366,18 @@
                 let friends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
                 saveLocalFriends(friends);
 
-                let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
-                posts = posts.map(post => {
-                    if (post.comments) {
-                        const updatedComments = post.comments.map(c => {
-                            if (normalizeText(c.name) === cleanKey) {
-                                return { ...c, isVerified: false };
-                            }
-                            return c;
-                        });
-                        const updatedPost = { ...post, comments: updatedComments };
-                        syncToCloud(updatedPost);
-                        return updatedPost;
-                    }
-                    return post;
-                });
-                localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
-                renderPosts();
-
                 if (window.db) {
                     try { await window.deleteDoc(window.doc(window.db, "friends_pins", cleanKey)); } catch(e){}
                 }
+                renderPosts();
             }
         };
 
         function renderFriendsList() {
             const container = document.getElementById('friendsListContainer');
             if (!container) return;
-            const list = window.friendsList || getLocalFriends();
-            if (list.length === 0) {
+            const list = getLocalFriends();
+            if (!list || list.length === 0) {
                 container.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">لا يوجد كود محدد بعد</p>';
                 return;
             }
@@ -528,7 +492,20 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // 💬 إضافة التعليق مع التوثيق الذكي والدائم
+        // دالة فحص التوثيق الديناميكية
+        function isCommentVerified(c) {
+            const friends = getLocalFriends();
+            const nameKey = normalizeText(c.name);
+            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
+            
+            if (registeredFriend) {
+                if (c.pin && c.pin === registeredFriend.pin) return true;
+                if (c.isVerified) return true;
+            }
+            return false;
+        }
+
+        // 💬 إضافة تعليق مع التحقق الدقيق من الكود
         window.addComment = async function(postId) {
             const nameInput = document.getElementById(`cName-${postId}`);
             const pinInput = document.getElementById(`cPin-${postId}`);
@@ -545,45 +522,27 @@
             }
 
             const nameKey = normalizeText(nameVal);
-            let registeredPin = null;
-
-            // 1. فحص القائمة المسجلة محلياً وفي الذاكرة
             const friends = getLocalFriends();
-            const foundLocal = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
-            if (foundLocal) {
-                registeredPin = foundLocal.pin;
-            }
-
-            // 2. فحص السحابة كخيار إضافي
-            if (!registeredPin && window.db && window.getDoc && window.doc) {
-                try {
-                    const friendDoc = await window.getDoc(window.doc(window.db, "friends_pins", nameKey));
-                    if (friendDoc.exists()) {
-                        registeredPin = friendDoc.data().pin;
-                    }
-                } catch(e) { console.error("Cloud check note:", e); }
-            }
+            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
 
             let isVerified = false;
 
-            // إذا كان الأدمن يسجل التعليق أو الاسم موثق بالكود
-            if (isAdminLoggedIn) {
-                isVerified = true;
-            } else if (registeredPin) {
-                if (registeredPin !== pinVal) {
+            if (registeredFriend) {
+                if (registeredFriend.pin === pinVal) {
+                    isVerified = true;
+                } else {
                     alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
-                    return;
+                    return; // إيقاف إرسال التعليق عند إدخال كود خاطئ
                 }
-                isVerified = true;
             }
 
-            // حفظ الاسم والكود محلياً لسهولة التعليق القادم
             localStorage.setItem('randa_friend_name', nameVal);
             if (pinVal) localStorage.setItem('randa_friend_pin', pinVal);
 
             const newComment = {
                 id: Date.now(),
                 name: nameVal,
+                pin: pinVal,
                 text: textVal,
                 isVerified: isVerified,
                 date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
@@ -884,13 +843,15 @@
                             <!-- قائمة التعليقات -->
                             ${(post.comments && post.comments.length > 0) ? `
                                 <div class="mt-3 space-y-2 bg-pink-50/50 p-3 rounded-2xl max-h-48 overflow-y-auto">
-                                    ${post.comments.map(c => `
+                                    ${post.comments.map(c => {
+                                        const isVerifiedUser = isCommentVerified(c);
+                                        return `
                                         <div class="text-xs bg-white p-2.5 rounded-xl shadow-sm border border-pink-100 flex justify-between items-center">
                                             <div class="flex flex-col flex-1">
                                                 <div class="flex justify-between items-center mb-1 pl-2">
                                                     <span class="font-bold text-gray-800 flex items-center gap-1.5">
                                                         <span>${c.name}</span>
-                                                        ${c.isVerified 
+                                                        ${isVerifiedUser 
                                                             ? '<span class="bg-pink-100 text-pink-600 text-[9px] px-2 py-0.5 rounded-full border border-pink-200 font-bold">✨ حساب موثوق</span>' 
                                                             : '<span class="bg-gray-100 text-gray-500 text-[9px] px-2 py-0.5 rounded-full font-bold">👤 زائر</span>'}
                                                     </span>
@@ -902,7 +863,7 @@
                                             <!-- أزرار الأدمن بجانب كل تعليق -->
                                             ${(isAdminLoggedIn && !isViewerMode) ? `
                                                 <div class="flex items-center gap-1 mr-2">
-                                                    ${!c.isVerified ? `
+                                                    ${!isVerifiedUser ? `
                                                         <button onclick="quickVerifyFriend('${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق الكود">
                                                             🔑 توثيق
                                                         </button>
@@ -913,7 +874,7 @@
                                                 </div>
                                             ` : ''}
                                         </div>
-                                    `).join('')}
+                                    `;}).join('')}
                                 </div>
                             ` : ''}
 
