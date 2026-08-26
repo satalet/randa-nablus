@@ -20,7 +20,7 @@
     <!-- Firebase SDK (v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
@@ -37,6 +37,7 @@
 
         window.db = db;
         window.setDoc = setDoc;
+        window.getDoc = getDoc;
         window.deleteDoc = deleteDoc;
         window.doc = doc;
         window.collection = collection;
@@ -147,15 +148,18 @@
             <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
         </div>
 
-        <!-- Backup & Share Link Section (Admin Only) -->
-        <div id="adminBackupSection" class="hidden bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 flex gap-2">
-            <button onclick="backupData()" class="flex-1 bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
+        <!-- Backup & Admin Controls Section -->
+        <div id="adminBackupSection" class="hidden bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 grid grid-cols-2 gap-2">
+            <button onclick="changeAdminPassword()" class="col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 px-3 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
+                <span>🔐 تغيير كلمة سر الأدمن</span>
+            </button>
+            <button onclick="backupData()" class="bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
             </button>
-            <button onclick="document.getElementById('restoreFile').click()" class="flex-1 bg-purple-50 text-purple-600 font-bold py-2.5 px-2 rounded-2xl border border-purple-200 hover:bg-purple-100 transition text-xs flex items-center justify-center gap-1">
+            <button onclick="document.getElementById('restoreFile').click()" class="bg-purple-50 text-purple-600 font-bold py-2.5 px-2 rounded-2xl border border-purple-200 hover:bg-purple-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📥 استعادة</span>
             </button>
-            <button onclick="copyFriendLink()" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-2.5 px-2 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
+            <button onclick="copyFriendLink()" class="col-span-2 bg-pink-500 text-white font-bold py-2.5 px-2 rounded-2xl hover:bg-pink-600 transition text-xs flex items-center justify-center gap-1 shadow-sm">
                 <span>🔗 رابط الصديقات</span>
             </button>
             <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
@@ -167,16 +171,49 @@
     </main>
 
     <script>
-        const AUTH_HASH = "MjAxMjE5ODFsZWU=";
+        let AUTH_HASH = "MjAxMjE5ODFsZWU="; // التشفير الافتراضي
         let isAdminLoggedIn = false;
         let isViewerMode = false;
         window.friendsList = [];
 
-        function verifyPassword(inputPass) {
-            return btoa(inputPass) === AUTH_HASH;
+        function hashString(str) {
+            return btoa(encodeURIComponent(str));
         }
 
-        // توحيد النصوص لمنع مشاكل الهمزات والمسافات
+        function verifyPassword(inputPass) {
+            if (!inputPass) return false;
+            const hashedInput = hashString(inputPass);
+            const currentHash = localStorage.getItem('randa_admin_hash') || window.cloudAdminHash || AUTH_HASH;
+            return hashedInput === currentHash || btoa(inputPass) === currentHash;
+        }
+
+        // تغيير كلمة سر الأدمن مع التشفير
+        window.changeAdminPassword = async function() {
+            if (!isAdminLoggedIn) return;
+            const oldPass = prompt('أدخلي كلمة المرور الحالية لتأكيد الهوية:');
+            if (!verifyPassword(oldPass)) {
+                alert('كلمة المرور الحالية غير صحيحة! ❌');
+                return;
+            }
+
+            const newPass = prompt('أدخلي كلمة المرور الجديدة للأدمن:');
+            if (!newPass || !newPass.trim()) {
+                alert('لم يتم إدخال كلمة مرور جديدة!');
+                return;
+            }
+
+            const encryptedHash = hashString(newPass.trim());
+            localStorage.setItem('randa_admin_hash', encryptedHash);
+
+            if (window.db) {
+                try {
+                    await window.setDoc(window.doc(window.db, "admin_config", "auth"), { hash: encryptedHash });
+                } catch(e) { console.error("Cloud pass sync error:", e); }
+            }
+
+            alert(`تم تغيير كلمة المرور وتشفيرها بنجاح! 🔐\n\nكود التشفير الجديد للمشروع هو:\n${encryptedHash}\n\n(تم حفظ التغيير بالسحابة فوراً وستعمل الكلمة الجديدة على كافة الأجهزة)`);
+        };
+
         function normalizeText(str) {
             if (!str) return '';
             return str.trim()
@@ -186,7 +223,6 @@
                 .toLowerCase();
         }
 
-        // إدارة الأكواد محلياً بالمتصفح
         function getLocalFriends() {
             return JSON.parse(localStorage.getItem('randa_friends_pins') || '[]');
         }
@@ -271,19 +307,16 @@
             }
         }
 
-        // --- 🌸 حفظ وتحديث كود الصديقة فوري محلياً وع السحابة ---
         async function saveFriendPin(name, pin) {
             if (!name || !pin) return;
             const cleanKey = normalizeText(name);
             let friends = getLocalFriends();
             
-            // تحديث أو إضافة القائمة المحلية
             friends = friends.filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
             const friendObj = { name: name.trim(), pin: pin.trim(), key: cleanKey };
             friends.push(friendObj);
             saveLocalFriends(friends);
 
-            // تحديث المنشورات المحلية فوراً
             let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             posts = posts.map(post => {
                 if (post.comments && post.comments.length > 0) {
@@ -307,7 +340,6 @@
             localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
             renderPosts();
 
-            // المزامنة مع الفايربيس إن أمكن
             if (window.db) {
                 try {
                     await window.setDoc(window.doc(window.db, "friends_pins", cleanKey), friendObj);
@@ -338,7 +370,6 @@
             alert(`تم توثيق (${friendName}) وتنسيق كافة تعليقاتها بنجاح! 🌸✨`);
         };
 
-        // تعديل الكود من القائمة
         window.editFriendPin = async function(cleanKey, name, currentPin) {
             if (!isAdminLoggedIn) return;
             const newPin = prompt(`أدخلي الكود السري الجديد لـ (${name}):`, currentPin);
@@ -348,14 +379,12 @@
             }
         };
 
-        // حذف الكود من القائمة
         window.deleteFriend = async function(cleanKey, name) {
             if (!isAdminLoggedIn) return;
             if (confirm(`متأكدة بدك تحذفي كود (${name})؟`)) {
                 let friends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
                 saveLocalFriends(friends);
 
-                // إلغاء التوثيق محلياً والسحابة
                 let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                 posts = posts.map(post => {
                     if (post.comments) {
@@ -499,9 +528,8 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // 💬 إضافة التعليق والتحقق
+        // 💬 إضافة التعليق مع فحص فوري على السحابة
         window.addComment = async function(postId) {
-            if (!window.db) return;
             const nameInput = document.getElementById(`cName-${postId}`);
             const pinInput = document.getElementById(`cPin-${postId}`);
             const textInput = document.getElementById(`cText-${postId}`);
@@ -516,15 +544,31 @@
                 return;
             }
 
-            const friends = window.friendsList || getLocalFriends();
             const nameKey = normalizeText(nameVal);
-            const registeredFriend = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
-            
+            let registeredPin = null;
+
+            // 1. فحص فوري من السحابة للتعرف المباشر على الأجهزة المختلفة
+            if (window.db && window.getDoc && window.doc) {
+                try {
+                    const friendDoc = await window.getDoc(window.doc(window.db, "friends_pins", nameKey));
+                    if (friendDoc.exists()) {
+                        registeredPin = friendDoc.data().pin;
+                    }
+                } catch(e) { console.error("Cloud check error", e); }
+            }
+
+            // 2. إذا تعذر الاتصال بالسحابة نفحص محلياً
+            if (!registeredPin) {
+                const friends = window.friendsList || getLocalFriends();
+                const found = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
+                if (found) registeredPin = found.pin;
+            }
+
             let isVerified = false;
 
-            if (registeredFriend) {
-                if (registeredFriend.pin !== pinVal) {
-                    alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود الصحيح للتأكد أنك صاحبة الاسم.`);
+            if (registeredPin) {
+                if (registeredPin !== pinVal) {
+                    alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد توثيق حسابك.`);
                     return;
                 }
                 isVerified = true;
@@ -546,10 +590,12 @@
             const existingComments = (post && post.comments && Array.isArray(post.comments)) ? post.comments : [];
             const updatedComments = [...existingComments, newComment];
 
-            try {
-                await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
-                textInput.value = '';
-            } catch(e) { console.error("Comment error:", e); }
+            if (window.db) {
+                try {
+                    await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+                    textInput.value = '';
+                } catch(e) { console.error("Comment error:", e); }
+            }
         };
 
         window.deleteComment = async function(postId, commentId) {
@@ -896,14 +942,21 @@
                 isAdminLoggedIn = true;
             }
             updateAdminUI();
-
-            // تحميل قائمة الأكواد المحلية فوراً
             renderFriendsList();
 
             const checkFirebase = setInterval(() => {
-                if (window.db && window.onSnapshot && window.collection) {
+                if (window.db && window.onSnapshot && window.collection && window.doc) {
                     clearInterval(checkFirebase);
                     
+                    // الاستماع لتغييرات كلمة سر الأدمن
+                    window.onSnapshot(window.doc(window.db, "admin_config", "auth"), (docSnap) => {
+                        if (docSnap.exists() && docSnap.data().hash) {
+                            window.cloudAdminHash = docSnap.data().hash;
+                            localStorage.setItem('randa_admin_hash', docSnap.data().hash);
+                        }
+                    });
+
+                    // الاستماع لأكواد الصديقات
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
                         const cloudFriends = snapshot.docs.map(doc => doc.data());
                         if (cloudFriends.length > 0) {
@@ -911,6 +964,7 @@
                         }
                     });
 
+                    // الاستماع للمنشورات العامة
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
                         const cloudPosts = snapshot.docs.map(doc => doc.data());
                         cloudPosts.sort((a, b) => b.id - a.id);
