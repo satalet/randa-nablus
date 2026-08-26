@@ -1,7 +1,7 @@
 {
-  "name": "يوميات رندة في نابلس",
+  "name": "يوميات رندة في صور 🌸",
   "short_name": "يوميات رندة",
-  "description": "تطبيق لتوثيق رحلة رندة وتعلم الكورية",
+  "description": "صورة و كلمة! لتوثيق أحلى اللحظات وتعلم الكورية",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ec4899",
