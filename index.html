@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>يوميات رندة في نابلس 🌸</title>
+    <title>يوميات رندة في صور 🌸</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ec4899">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -48,14 +48,14 @@
 
     <!-- شريط وضع الزائر -->
     <div id="viewerNotice" class="hidden bg-pink-500 text-white text-center py-2 px-4 font-bold text-sm sticky top-0 z-50 shadow-md">
-        🌸 أهلاً بكِ! أنتِ تتصفحين ألبوم رندة العام 🌸
+        🌸 أهلاً بكم! أنتم تتصفحون ألبوم رندة العام 🌸
     </div>
 
     <!-- شاشة البداية -->
     <div id="splashScreen" class="fixed inset-0 z-50 bg-pink-500 flex flex-col items-center justify-center text-white">
-        <img src="splash.jpg" alt="رندة في نابلس" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
-        <h1 class="text-4xl font-bold mb-2">يوميات رندة</h1>
-        <p class="text-xl opacity-90">أحلى الأوقات في نابلس 🌸</p>
+        <img src="splash.jpg" alt="يوميات رندة في صور" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-xl mb-6">
+        <h1 class="text-4xl font-bold mb-2">يوميات رندة في صور</h1>
+        <p class="text-xl opacity-90">صورة و كلمة! لتوثيق أحلى اللحظات 🌸</p>
         <div class="mt-8 flex gap-2">
             <div class="w-3 h-3 bg-white rounded-full animate-bounce"></div>
             <div class="w-3 h-3 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
@@ -65,8 +65,8 @@
 
     <!-- Header -->
     <header class="bg-pink-500 text-white p-4 shadow-md sticky top-0 z-10 text-center rounded-b-3xl relative">
-        <h1 class="text-2xl font-bold">يوميات رندة 🌸</h1>
-        <p class="text-sm opacity-90">ديباك! توثيق أحلى اللحظات</p>
+        <h1 class="text-2xl font-bold">يوميات رندة في صور 🌸</h1>
+        <p class="text-sm opacity-90">صورة و كلمة! لتوثيق أحلى اللحظات</p>
 
         <button id="authBtn" onclick="handleAuthToggle()" class="absolute left-3 top-4 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
             🔑 دخول الأدمن
@@ -75,19 +75,19 @@
 
     <main class="p-4 max-w-md mx-auto mt-2">
 
-        <!-- لوحة إدارة أكواد الصديقات -->
+        <!-- لوحة إدارة أكواد الحسابات الموثوقة -->
         <div id="adminFriendsPanel" class="hidden bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h3 class="text-base font-bold text-pink-600 mb-1 flex items-center gap-2">
-                <span>🔒 إدارة أكواد الصديقات</span>
+                <span>🔒 إدارة أكواد الحسابات الموثوقة</span>
             </h3>
-            <p class="text-xs text-gray-500 mb-4">أضيفي كود الصدّيقة هنا أو اضغطي (🔑 توثيق) بجانب تعليقها بالأسفل.</p>
+            <p class="text-xs text-gray-500 mb-4">أضف الاسم والكود المخصص هنا أو اضغط (🔑 توثيق) بجانب التعليق بالأسفل.</p>
             
             <div class="flex gap-2 mb-3">
-                <input type="text" id="newFriendName" placeholder="اسم الصدّيقة (مثال: سارة)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
-                <input type="text" id="newFriendPin" placeholder="الكود (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
+                <input type="text" id="newFriendName" placeholder="الاسم (مثال: محمد ابو باسم)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
+                <input type="text" id="newFriendPin" placeholder="الكود السري (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
             </div>
             <button onclick="addFriendFromPanel()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
-                حفظ الصدّيقة والكود 🌸
+                حفظ الحساب والكود 🌸
             </button>
 
             <h4 class="text-xs font-bold text-gray-600 mb-2">قائمة الأكواد المعتمدة:</h4>
@@ -101,13 +101,13 @@
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <button type="button" onclick="document.getElementById('cameraInput').click()" class="bg-pink-50 border-2 border-dashed border-pink-300 rounded-2xl p-4 text-center hover:bg-pink-100 transition flex flex-col items-center justify-center shadow-sm">
                     <span class="text-3xl mb-1">📸</span>
-                    <span class="text-xs text-pink-600 font-bold">صوري الآن</span>
+                    <span class="text-xs text-pink-600 font-bold">التقط صورة</span>
                 </button>
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
 
                 <button type="button" onclick="document.getElementById('galleryInput').click()" class="bg-pink-50 border-2 border-dashed border-pink-300 rounded-2xl p-4 text-center hover:bg-pink-100 transition flex flex-col items-center justify-center shadow-sm">
                     <span class="text-3xl mb-1">🖼️</span>
-                    <span class="text-xs text-pink-600 font-bold">من الاستديو</span>
+                    <span class="text-xs text-pink-600 font-bold">من المعرض</span>
                 </button>
                 <input type="file" id="galleryInput" accept="image/*" class="hidden">
             </div>
@@ -115,13 +115,13 @@
             <img id="preview" class="hidden w-full h-56 object-cover rounded-2xl mb-4 shadow-sm border border-gray-100">
 
             <div class="relative mb-3">
-                <textarea id="arText" rows="2" class="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-gray-700 bg-gray-50" placeholder="اكتبي يومياتك بالعربي أو احكيها بصوتك..."></textarea>
-                <button type="button" id="micBtn" class="absolute left-2 bottom-3 bg-pink-500 text-white p-2 rounded-full shadow hover:bg-pink-600 transition flex items-center justify-center" title="احكي بالعربي">🎤</button>
+                <textarea id="arText" rows="2" class="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-gray-700 bg-gray-50" placeholder="اكتب اليومية أو تحدث بصوتك..."></textarea>
+                <button type="button" id="micBtn" class="absolute left-2 bottom-3 bg-pink-500 text-white p-2 rounded-full shadow hover:bg-pink-600 transition flex items-center justify-center" title="تحدث بالعربية">🎤</button>
             </div>
-            <div id="micStatus" class="text-xs text-pink-500 hidden mb-3 font-bold text-center">جاري الاستماع... احكي براحتك!</div>
+            <div id="micStatus" class="text-xs text-pink-500 hidden mb-3 font-bold text-center">جاري الاستماع... يمكنك التحدث الآن!</div>
 
             <div class="relative mb-4">
-                <textarea id="koText" rows="2" class="w-full p-4 border border-pink-200 bg-pink-50 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-left font-medium text-pink-900" dir="ltr" placeholder="الترجمة الكورية رح تطلع هون..."></textarea>
+                <textarea id="koText" rows="2" class="w-full p-4 border border-pink-200 bg-pink-50 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-left font-medium text-pink-900" dir="ltr" placeholder="الترجمة الكورية تظهر هنا..."></textarea>
             </div>
 
             <div class="mb-4 bg-pink-50 p-3 rounded-2xl border border-pink-100">
@@ -130,20 +130,20 @@
                     <label class="flex-1 cursor-pointer">
                         <input type="radio" name="privacyOpt" value="private" id="privPrivate" checked class="peer hidden">
                         <div class="p-2.5 text-center text-xs font-bold rounded-xl border border-pink-200 bg-white peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 text-pink-700 transition shadow-sm">
-                            🔒 خاص (جهازي فقط)
+                            🔒 خاص (هذا الجهاز)
                         </div>
                     </label>
                     <label class="flex-1 cursor-pointer">
                         <input type="radio" name="privacyOpt" value="public" id="privPublic" class="peer hidden">
                         <div class="p-2.5 text-center text-xs font-bold rounded-xl border border-pink-200 bg-white peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 text-pink-700 transition shadow-sm">
-                            🌐 عام (للصديقات)
+                            🌐 عام (للجميع)
                         </div>
                     </label>
                 </div>
             </div>
 
             <button id="saveBtn" class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-md hover:opacity-90 transition text-lg flex justify-center items-center gap-2">
-                <span>نشر في اليوميات</span> 🚀
+                <span>نشر اليومية</span> 🚀
             </button>
             <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
         </div>
@@ -160,7 +160,7 @@
                 <span>📥 استعادة</span>
             </button>
             <button onclick="copyFriendLink()" class="col-span-2 bg-pink-500 text-white font-bold py-2.5 px-2 rounded-2xl hover:bg-pink-600 transition text-xs flex items-center justify-center gap-1 shadow-sm">
-                <span>🔗 رابط الصديقات</span>
+                <span>🔗 رابط المشاركة العام</span>
             </button>
             <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
         </div>
@@ -171,7 +171,7 @@
     </main>
 
     <script>
-        let AUTH_HASH = "MjAxMjE5ODFsZWU="; // التشفير الافتراضي
+        let AUTH_HASH = "MjAxMjE5ODFsZWU=";
         let isAdminLoggedIn = false;
         let isViewerMode = false;
         window.friendsList = [];
@@ -187,16 +187,15 @@
             return hashedInput === currentHash || btoa(inputPass) === currentHash;
         }
 
-        // تغيير كلمة سر الأدمن مع التشفير
         window.changeAdminPassword = async function() {
             if (!isAdminLoggedIn) return;
-            const oldPass = prompt('أدخلي كلمة المرور الحالية لتأكيد الهوية:');
+            const oldPass = prompt('أدخل كلمة المرور الحالية لتأكيد الهوية:');
             if (!verifyPassword(oldPass)) {
                 alert('كلمة المرور الحالية غير صحيحة! ❌');
                 return;
             }
 
-            const newPass = prompt('أدخلي كلمة المرور الجديدة للأدمن:');
+            const newPass = prompt('أدخل كلمة المرور الجديدة للأدمن:');
             if (!newPass || !newPass.trim()) {
                 alert('لم يتم إدخال كلمة مرور جديدة!');
                 return;
@@ -211,7 +210,7 @@
                 } catch(e) { console.error("Cloud pass sync error:", e); }
             }
 
-            alert(`تم تغيير كلمة المرور وتشفيرها بنجاح! 🔐\n\nكود التشفير الجديد للمشروع هو:\n${encryptedHash}\n\n(تم حفظ التغيير بالسحابة فوراً وستعمل الكلمة الجديدة على كافة الأجهزة)`);
+            alert(`تم تغيير كلمة المرور وتشفيرها بنجاح! 🔐\n\nكود التشفير الجديد للمشروع هو:\n${encryptedHash}`);
         };
 
         function normalizeText(str) {
@@ -265,21 +264,21 @@
 
         window.handleAuthToggle = function() {
             if (isAdminLoggedIn) {
-                if (confirm('هل ترغبين بتسجيل الخروج من لوحة الأدمن؟')) {
+                if (confirm('هل ترغب بتسجيل الخروج من لوحة الأدمن؟')) {
                     sessionStorage.removeItem('randa_admin_auth');
                     isAdminLoggedIn = false;
                     updateAdminUI();
                     location.reload();
                 }
             } else {
-                const pass = prompt('أدخلي كلمة المرور للوصول إلى لوحة التحكم:');
+                const pass = prompt('أدخل كلمة المرور للوصول إلى لوحة التحكم:');
                 if (pass !== null) {
                     if (verifyPassword(pass)) {
                         sessionStorage.setItem('randa_admin_auth', 'true');
                         isAdminLoggedIn = true;
                         updateAdminUI();
                         renderPosts();
-                        alert('أهلاً رندة! تم تفعيل لوحة التحكم بنجاح 🌸✨');
+                        alert('أهلاً بك! تم تفعيل لوحة التحكم بنجاح 🌸✨');
                     } else {
                         alert('كلمة المرور غير صحيحة! ❌');
                     }
@@ -317,6 +316,7 @@
             friends.push(friendObj);
             saveLocalFriends(friends);
 
+            // تحديث كافة تعليقات هذا الاسم فوراً
             let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             posts = posts.map(post => {
                 if (post.comments && post.comments.length > 0) {
@@ -352,27 +352,27 @@
             const name = document.getElementById('newFriendName').value.trim();
             const pin = document.getElementById('newFriendPin').value.trim();
             if (!name || !pin) {
-                alert('ادخلي اسم الصدّيقة والكود السري! 🌸');
+                alert('أدخل الاسم والكود السري! 🌸');
                 return;
             }
             await saveFriendPin(name, pin);
             document.getElementById('newFriendName').value = '';
             document.getElementById('newFriendPin').value = '';
-            alert(`تم حفظ كود (${name}) وتوثيق كافة تعليقاتها بنجاح! 🔒✨`);
+            alert(`تم حفظ كود (${name}) وتوثيق كافة تعليقاته بنجاح! 🔒✨`);
         };
 
         window.quickVerifyFriend = async function(friendName) {
             if (!isAdminLoggedIn) return;
-            const pin = prompt(`أدخلي الكود السري الخاص بـ (${friendName}):`);
+            const pin = prompt(`أدخل الكود السري الخاص بـ (${friendName}):`, '1234');
             if (!pin || !pin.trim()) return;
 
             await saveFriendPin(friendName, pin.trim());
-            alert(`تم توثيق (${friendName}) وتنسيق كافة تعليقاتها بنجاح! 🌸✨`);
+            alert(`تم توثيق (${friendName}) وتحديث جميع تعليقاته بنجاح! 🌸✨`);
         };
 
         window.editFriendPin = async function(cleanKey, name, currentPin) {
             if (!isAdminLoggedIn) return;
-            const newPin = prompt(`أدخلي الكود السري الجديد لـ (${name}):`, currentPin);
+            const newPin = prompt(`أدخل الكود السري الجديد لـ (${name}):`, currentPin);
             if (newPin && newPin.trim()) {
                 await saveFriendPin(name, newPin.trim());
                 alert(`تم تحديث كود (${name}) بنجاح! 🔒`);
@@ -381,7 +381,7 @@
 
         window.deleteFriend = async function(cleanKey, name) {
             if (!isAdminLoggedIn) return;
-            if (confirm(`متأكدة بدك تحذفي كود (${name})؟`)) {
+            if (confirm(`هل أنت متأكد من حذف كود (${name})؟`)) {
                 let friends = getLocalFriends().filter(f => (f.key || normalizeText(f.name)) !== cleanKey);
                 saveLocalFriends(friends);
 
@@ -463,14 +463,14 @@
             micBtn.addEventListener('click', () => {
                 recognition.start();
                 micStatus.classList.remove('hidden');
-                micStatus.textContent = 'جاري الاستماع... احكي!';
+                micStatus.textContent = 'جاري الاستماع... تحدث الآن!';
                 micBtn.classList.add('animate-pulse', 'bg-red-500');
             });
 
             recognition.onresult = async (event) => {
                 const transcript = event.results[0][0].transcript;
                 arText.value = transcript;
-                micStatus.textContent = 'جاري الترجمة للكوري... ⏳';
+                micStatus.textContent = 'جاري الترجمة للكورية... ⏳';
                 micBtn.classList.remove('animate-pulse', 'bg-red-500');
                 
                 try {
@@ -481,13 +481,13 @@
                         micStatus.textContent = 'تمت الترجمة بنجاح! ✅';
                     }
                 } catch (error) {
-                    micStatus.textContent = 'صار مشكلة بالترجمة، جربي كمان مرة.';
+                    micStatus.textContent = 'حدث خطأ بالترجمة، حاول مجدداً.';
                 }
                 setTimeout(() => micStatus.classList.add('hidden'), 3000);
             };
 
             recognition.onerror = () => {
-                micStatus.textContent = 'ما سمعت منيح، عيدي بالله! 😅';
+                micStatus.textContent = 'لم يتم الالتقاط بوضوح، أعد المحاولة.';
                 micBtn.classList.remove('animate-pulse', 'bg-red-500');
                 setTimeout(() => micStatus.classList.add('hidden'), 3000);
             };
@@ -528,7 +528,7 @@
             } catch(e) { console.error("Like error:", e); }
         };
 
-        // 💬 إضافة التعليق مع فحص فوري على السحابة
+        // 💬 إضافة التعليق مع التوثيق الذكي والدائم
         window.addComment = async function(postId) {
             const nameInput = document.getElementById(`cName-${postId}`);
             const pinInput = document.getElementById(`cPin-${postId}`);
@@ -540,40 +540,44 @@
             const textVal = textInput.value.trim();
 
             if (!nameVal || !textVal) {
-                alert('اكتبي اسمك والتعليق أولاً 🌸');
+                alert('يرجى كتابة الاسم والتعليق أولاً 🌸');
                 return;
             }
 
             const nameKey = normalizeText(nameVal);
             let registeredPin = null;
 
-            // 1. فحص فوري من السحابة للتعرف المباشر على الأجهزة المختلفة
-            if (window.db && window.getDoc && window.doc) {
+            // 1. فحص القائمة المسجلة محلياً وفي الذاكرة
+            const friends = getLocalFriends();
+            const foundLocal = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
+            if (foundLocal) {
+                registeredPin = foundLocal.pin;
+            }
+
+            // 2. فحص السحابة كخيار إضافي
+            if (!registeredPin && window.db && window.getDoc && window.doc) {
                 try {
                     const friendDoc = await window.getDoc(window.doc(window.db, "friends_pins", nameKey));
                     if (friendDoc.exists()) {
                         registeredPin = friendDoc.data().pin;
                     }
-                } catch(e) { console.error("Cloud check error", e); }
-            }
-
-            // 2. إذا تعذر الاتصال بالسحابة نفحص محلياً
-            if (!registeredPin) {
-                const friends = window.friendsList || getLocalFriends();
-                const found = friends.find(f => (f.key || normalizeText(f.name)) === nameKey);
-                if (found) registeredPin = found.pin;
+                } catch(e) { console.error("Cloud check note:", e); }
             }
 
             let isVerified = false;
 
-            if (registeredPin) {
+            // إذا كان الأدمن يسجل التعليق أو الاسم موثق بالكود
+            if (isAdminLoggedIn) {
+                isVerified = true;
+            } else if (registeredPin) {
                 if (registeredPin !== pinVal) {
-                    alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد توثيق حسابك.`);
+                    alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
                     return;
                 }
                 isVerified = true;
             }
 
+            // حفظ الاسم والكود محلياً لسهولة التعليق القادم
             localStorage.setItem('randa_friend_name', nameVal);
             if (pinVal) localStorage.setItem('randa_friend_pin', pinVal);
 
@@ -600,7 +604,7 @@
 
         window.deleteComment = async function(postId, commentId) {
             if (!isAdminLoggedIn) return;
-            if (!confirm('متأكدة بدك تحذفي هاد التعليق؟ 🌸')) return;
+            if (!confirm('هل أنت متأكد من حذف هذا التعليق؟ 🌸')) return;
 
             const posts = window.currentDisplayedPosts || JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
             const post = posts.find(p => String(p.id) === String(postId));
@@ -616,7 +620,7 @@
         saveBtn.addEventListener('click', async () => {
             if (!isAdminLoggedIn) return;
             if (!currentImageBase64 && !arText.value && !koText.value) {
-                alert('اكتبي إشي أو حطي صورة أول!');
+                alert('اكتب نصاً أو أدرج صورة أولاً!');
                 return;
             }
             
@@ -660,7 +664,7 @@
                 });
                 editingId = null;
                 formTitle.textContent = 'إضافة يومية جديدة ✨';
-                saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
+                saveBtn.querySelector('span').textContent = 'نشر اليومية';
                 cancelEditBtn.classList.add('hidden');
             } else {
                 updatedPost = {
@@ -691,7 +695,7 @@
         cancelEditBtn.addEventListener('click', () => {
             editingId = null;
             formTitle.textContent = 'إضافة يومية جديدة ✨';
-            saveBtn.querySelector('span').textContent = 'نشر في اليوميات';
+            saveBtn.querySelector('span').textContent = 'نشر اليومية';
             cancelEditBtn.classList.add('hidden');
             currentImageBase64 = '';
             preview.classList.add('hidden');
@@ -703,7 +707,7 @@
 
         window.deletePost = async function(id) {
             if (!isAdminLoggedIn) return;
-            if (confirm('متأكدة بدك تحذفي هاي اليومية؟')) {
+            if (confirm('هل أنت متأكد من حذف هذه اليومية؟')) {
                 let posts = JSON.parse(localStorage.getItem('randa_diary_posts') || '[]');
                 posts = posts.filter(p => p.id !== id);
                 localStorage.setItem('randa_diary_posts', JSON.stringify(posts));
@@ -763,7 +767,7 @@
         window.copyFriendLink = function() {
             const link = `${window.location.origin}${window.location.pathname}?mode=view`;
             navigator.clipboard.writeText(link).then(() => {
-                alert('🔗 تم نسخ رابط الصديقات بنجاح!\nشاركي الرابط مع صديقاتك ليشوفوا اليوميات العامة فقط.');
+                alert('🔗 تم نسخ رابط المشاركة العام بنجاح!\nيمكنك مشاركة الرابط لمشاهدة اليوميات العامة.');
             });
         };
 
@@ -780,7 +784,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `randa-nablus-backup-${Date.now()}.json`;
+            a.download = `randa-images-backup-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
             alert('تم حفظ النسخة الاحتياطية بنجاح! 📦✅');
@@ -831,8 +835,8 @@
             const dadSurprisePost = {
                 date: 'رسالة خاصة من بابا 🌸',
                 image: 'dad-randa.jpg',
-                ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة نابلس يا روح أبوكِ ✨',
-                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 나블루스에서 가장 예쁜 우리 딸, 대박! 🌸',
+                ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة الدنيا يا روح أبوكِ ✨',
+                ko: '내 작은 천사 란دا.. 네가 얼마나 자라든, 너는 내 목소리를 들으며 잠들던 그 작은 아이란단다. 대박! 🌸',
                 isDad: true
             };
 
@@ -864,11 +868,11 @@
                         ${post.ko ? `
                             <div class="bg-pink-50 p-4 rounded-2xl flex justify-between items-center mt-3 border border-pink-100">
                                 <p class="text-pink-700 font-medium flex-1 text-left text-lg" dir="ltr">${post.ko}</p>
-                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="اسمعي اللفظ">🔊</button>
+                                <button onclick="speakKorean('${post.ko.replace(/'/g, "\\'")}')" class="bg-pink-200 text-pink-700 w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-300 transition ml-3 flex-shrink-0 shadow-sm" title="استمع للفظ">🔊</button>
                             </div>
                         ` : ''}
 
-                        <!-- ❤️ قسم اللايكات والتعليقات -->
+                        <!-- ❤️ قسم الإعجابات والتعليقات -->
                         ${(!post.isDad && post.isPublic) ? `
                             <div class="mt-4 pt-3 border-t border-pink-100 flex items-center justify-between">
                                 <button onclick="likePost(${post.id})" class="flex items-center gap-1.5 bg-pink-50 hover:bg-pink-100 text-pink-600 px-3 py-1.5 rounded-full text-xs font-bold transition">
@@ -887,7 +891,7 @@
                                                     <span class="font-bold text-gray-800 flex items-center gap-1.5">
                                                         <span>${c.name}</span>
                                                         ${c.isVerified 
-                                                            ? '<span class="bg-pink-100 text-pink-600 text-[9px] px-2 py-0.5 rounded-full border border-pink-200 font-bold">🌸 صديقة موثوقة</span>' 
+                                                            ? '<span class="bg-pink-100 text-pink-600 text-[9px] px-2 py-0.5 rounded-full border border-pink-200 font-bold">✨ حساب موثوق</span>' 
                                                             : '<span class="bg-gray-100 text-gray-500 text-[9px] px-2 py-0.5 rounded-full font-bold">👤 زائر</span>'}
                                                     </span>
                                                     <span class="text-[9px] text-gray-400">${c.date || ''}</span>
@@ -899,7 +903,7 @@
                                             ${(isAdminLoggedIn && !isViewerMode) ? `
                                                 <div class="flex items-center gap-1 mr-2">
                                                     ${!c.isVerified ? `
-                                                        <button onclick="quickVerifyFriend('${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق وإعطاء كود">
+                                                        <button onclick="quickVerifyFriend('${c.name.replace(/'/g, "\\'")}')" class="text-[10px] bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-2 py-1 rounded-lg transition shadow-sm" title="توثيق الكود">
                                                             🔑 توثيق
                                                         </button>
                                                     ` : ''}
@@ -916,10 +920,10 @@
                             <!-- مربع إضافة تعليق -->
                             <div class="mt-3 flex flex-col gap-2">
                                 <div class="flex gap-2">
-                                    <input type="text" id="cName-${post.id}" value="${savedFriendName}" placeholder="اسمك 🌸" class="flex-1 text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
-                                    <input type="password" id="cPin-${post.id}" value="${savedFriendPin}" placeholder="كودك السري 🔒" class="w-28 text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
+                                    <input type="text" id="cName-${post.id}" value="${savedFriendName}" placeholder="الاسم 🌸" class="flex-1 text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
+                                    <input type="password" id="cPin-${post.id}" value="${savedFriendPin}" placeholder="الكود السري 🔒" class="w-28 text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
                                 </div>
-                                <input type="text" id="cText-${post.id}" placeholder="اكتبي تعليقك..." class="w-full text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
+                                <input type="text" id="cText-${post.id}" placeholder="اكتب تعليقك هنا..." class="w-full text-xs p-2.5 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-white">
                                 <button onclick="addComment(${post.id})" class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold py-2 rounded-xl hover:opacity-90 transition shadow-sm">
                                     إرسال التعليق 💬
                                 </button>
@@ -948,7 +952,6 @@
                 if (window.db && window.onSnapshot && window.collection && window.doc) {
                     clearInterval(checkFirebase);
                     
-                    // الاستماع لتغييرات كلمة سر الأدمن
                     window.onSnapshot(window.doc(window.db, "admin_config", "auth"), (docSnap) => {
                         if (docSnap.exists() && docSnap.data().hash) {
                             window.cloudAdminHash = docSnap.data().hash;
@@ -956,7 +959,6 @@
                         }
                     });
 
-                    // الاستماع لأكواد الصديقات
                     window.onSnapshot(window.collection(window.db, "friends_pins"), (snapshot) => {
                         const cloudFriends = snapshot.docs.map(doc => doc.data());
                         if (cloudFriends.length > 0) {
@@ -964,7 +966,6 @@
                         }
                     });
 
-                    // الاستماع للمنشورات العامة
                     window.onSnapshot(window.collection(window.db, "public_posts"), (snapshot) => {
                         const cloudPosts = snapshot.docs.map(doc => doc.data());
                         cloudPosts.sort((a, b) => b.id - a.id);
