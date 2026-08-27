@@ -1,7 +1,7 @@
 {
-  "name": "يوميات رندة في صور 🌸",
-  "short_name": "يوميات رندة",
-  "description": "صورة و كلمة! لتوثيق أحلى اللحظات وتعلم الكورية",
+  "name": "Randa and Girls' Diaries 🌸",
+  "short_name": "يوميات رندة و البنات",
+  "description": "Randa and Girls' Diaries - ألبوم يوميات رندة و البنات لتوثيق أحلى اللحظات والمشاركات",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ec4899",
