@@ -35,34 +35,6 @@
         ::-webkit-scrollbar-track { background: var(--pink-soft); }
         ::-webkit-scrollbar-thumb { background: var(--pink-primary); border-radius: 10px; }
     </style>
-
-    <!-- Firebase SDK (v10) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
-            authDomain: "randa-nablus.firebaseapp.com",
-            projectId: "randa-nablus",
-            storageBucket: "randa-nablus.firebasestorage.app",
-            messagingSenderId: "433006813795",
-            appId: "1:433006813795:web:df63f875d11621e2040e56",
-            measurementId: "G-MWD3BHDSLC"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        window.db = db;
-        window.setDoc = setDoc;
-        window.getDoc = getDoc;
-        window.getDocs = getDocs;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.collection = collection;
-        window.onSnapshot = onSnapshot;
-    </script>
 </head>
 <body class="pb-20">
 
@@ -247,969 +219,968 @@
     <button id="scrollTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})"
         class="hidden fixed bottom-6 left-6 z-40 bg-pink-500 text-white w-11 h-11 rounded-full shadow-lg hover:bg-pink-600 transition text-xl font-bold">↑</button>
 
-    <script>
-    const STORAGE_KEYS = {
-        posts: 'randa_diary_posts',
-        adminHash: 'randa_admin_hash',
-        friendName: 'randa_friend_name',
-        friendPin: 'randa_friend_pin'
-    };
+    <!-- Firebase + Application Logic (Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const IMAGE_CONFIG = {
-        post:     { maxWidth: 800, quality: 0.7 },
-        verified: { maxWidth: 800, quality: 0.7 },
-        comment:  { maxWidth: 500, quality: 0.6 }
-    };
-
-    let AUTH_HASH = "MjAxMjE5ODFsZWU=";
-    let isAdminLoggedIn = false;
-    let isViewerMode = false;
-    let friendsPinsMap = {};
-    let commentImages = {};
-    let verifiedPostImageBase64 = '';
-
-    let recordedAudioBase64 = '';
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let recordInterval = null;
-    let recordSeconds = 0;
-
-    let currentImageBase64 = '';
-    let editingId = null;
-
-    const dom = {
-        postsFeed:      document.getElementById('postsFeed'),
-        saveBtn:        document.getElementById('saveBtn'),
-        cancelEditBtn:  document.getElementById('cancelEditBtn'),
-        formTitle:      document.getElementById('formTitle'),
-        authBtn:        document.getElementById('authBtn'),
-        preview:        document.getElementById('preview'),
-        arText:         document.getElementById('arText'),
-        recordAudioBtn: document.getElementById('recordAudioBtn'),
-        recordBtnIcon:  document.getElementById('recordBtnIcon'),
-        recordBtnText:  document.getElementById('recordBtnText'),
-        recordTimer:    document.getElementById('recordTimer'),
-        audioPreview:   document.getElementById('audioPreviewContainer'),
-        audioPlayer:    document.getElementById('audioPreviewPlayer'),
-        scrollTopBtn:   document.getElementById('scrollTopBtn'),
-        friendsList:    document.getElementById('friendsListContainer')
-    };
-
-    function esc(str) {
-        return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    function jsEsc(str) {
-        return String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    }
-
-    function hashString(str) {
-        return btoa(encodeURIComponent(str));
-    }
-
-    function normalizeText(str) {
-        if (!str) return '';
-        return String(str).trim()
-            .replace(/[أإآ]/g, 'ا')
-            .replace(/ى/g, 'ي')
-            .replace(/ة/g, 'ه')
-            .replace(/\s+/g, ' ')
-            .toLowerCase();
-    }
-
-    function getSafeDocId(str) {
-        return encodeURIComponent(normalizeText(str)).replace(/\./g, '%2E');
-    }
-
-    function getLocalPosts() {
-        return JSON.parse(localStorage.getItem(STORAGE_KEYS.posts) || '[]');
-    }
-
-    function saveLocalPosts(posts) {
-        localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
-    }
-
-    function compressImage(file, type, onDone) {
-        if (!file) return;
-        const { maxWidth, quality } = IMAGE_CONFIG[type];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                let { width, height } = img;
-                if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                const canvas = document.createElement('canvas');
-                canvas.width = width; canvas.height = height;
-                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                onDone(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.src = e.target.result;
+        const firebaseConfig = {
+            apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
+            authDomain: "randa-nablus.firebaseapp.com",
+            projectId: "randa-nablus",
+            storageBucket: "randa-nablus.firebasestorage.app",
+            messagingSenderId: "433006813795",
+            appId: "1:433006813795:web:df63f875d11621e2040e56",
+            measurementId: "G-MWD3BHDSLC"
         };
-        reader.readAsDataURL(file);
-    }
 
-    function handleImage(e) {
-        compressImage(e.target.files[0], 'post', (b64) => {
-            currentImageBase64 = b64;
-            dom.preview.src = b64;
-            dom.preview.classList.remove('hidden');
-        });
-    }
-    document.getElementById('cameraInput').addEventListener('change', handleImage);
-    document.getElementById('galleryInput').addEventListener('change', handleImage);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    window.handleVerifiedPostImage = function(e) {
-        compressImage(e.target.files[0], 'verified', (b64) => {
-            verifiedPostImageBase64 = b64;
-            document.getElementById('vPostPreview').src = b64;
-            document.getElementById('vPostPreviewContainer').classList.remove('hidden');
-        });
-    };
+        const STORAGE_KEYS = {
+            posts: 'randa_diary_posts',
+            adminHash: 'randa_admin_hash',
+            friendName: 'randa_friend_name',
+            friendPin: 'randa_friend_pin'
+        };
 
-    window.cancelVerifiedPostImage = function() {
-        verifiedPostImageBase64 = '';
-        document.getElementById('vPostPreview').src = '';
-        document.getElementById('vPostPreviewContainer').classList.add('hidden');
-        document.getElementById('vPostImageInput').value = '';
-    };
+        const IMAGE_CONFIG = {
+            post:     { maxWidth: 800, quality: 0.7 },
+            verified: { maxWidth: 800, quality: 0.7 },
+            comment:  { maxWidth: 500, quality: 0.6 }
+        };
 
-    window.handleCommentImage = function(e, postId) {
-        compressImage(e.target.files[0], 'comment', (b64) => {
-            commentImages[postId] = b64;
-            const prevElem = document.getElementById(`cPreview-${postId}`);
-            if (prevElem) {
-                prevElem.src = b64;
-                prevElem.classList.remove('hidden');
-            }
-        });
-    };
+        let AUTH_HASH = "MjAxMjE5ODFsZWU=";
+        let isAdminLoggedIn = false;
+        let isViewerMode = false;
+        let friendsPinsMap = {};
+        let commentImages = {};
+        let verifiedPostImageBase64 = '';
 
-    window.removeCommentImage = function(postId) {
-        delete commentImages[postId];
-        const prevElem = document.getElementById(`cPreview-${postId}`);
-        const inputElem = document.getElementById(`cImgInput-${postId}`);
-        if (prevElem) { prevElem.src = ''; prevElem.classList.add('hidden'); }
-        if (inputElem) inputElem.value = '';
-    };
+        let recordedAudioBase64 = '';
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordInterval = null;
+        let recordSeconds = 0;
 
-    function openImageModal(src) {
-        if (!src) return;
-        document.getElementById('modalImg').src = src;
-        document.getElementById('imageModal').classList.remove('hidden');
-    }
+        let currentImageBase64 = '';
+        let editingId = null;
 
-    function closeImageModal() {
-        document.getElementById('imageModal').classList.add('hidden');
-        document.getElementById('modalImg').src = '';
-    }
+        const dom = {
+            postsFeed:      document.getElementById('postsFeed'),
+            saveBtn:        document.getElementById('saveBtn'),
+            cancelEditBtn:  document.getElementById('cancelEditBtn'),
+            formTitle:      document.getElementById('formTitle'),
+            authBtn:        document.getElementById('authBtn'),
+            preview:        document.getElementById('preview'),
+            arText:         document.getElementById('arText'),
+            recordAudioBtn: document.getElementById('recordAudioBtn'),
+            recordBtnIcon:  document.getElementById('recordBtnIcon'),
+            recordBtnText:  document.getElementById('recordBtnText'),
+            recordTimer:    document.getElementById('recordTimer'),
+            audioPreview:   document.getElementById('audioPreviewContainer'),
+            audioPlayer:    document.getElementById('audioPreviewPlayer'),
+            scrollTopBtn:   document.getElementById('scrollTopBtn'),
+            friendsList:    document.getElementById('friendsListContainer')
+        };
 
-    window.toggleAudioRecording = async function() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            return;
+        function esc(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+        function jsEsc(str) {
+            return String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunks.push(e.data);
-            };
+        function hashString(str) {
+            return btoa(encodeURIComponent(str));
+        }
 
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    recordedAudioBase64 = reader.result;
-                    dom.audioPlayer.src = recordedAudioBase64;
-                    dom.audioPreview.classList.remove('hidden');
+        function normalizeText(str) {
+            if (!str) return '';
+            return String(str).trim()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ى/g, 'ي')
+                .replace(/ة/g, 'ه')
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+        }
+
+        function getSafeDocId(str) {
+            return encodeURIComponent(normalizeText(str)).replace(/\./g, '%2E');
+        }
+
+        function getLocalPosts() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.posts) || '[]');
+        }
+
+        function saveLocalPosts(posts) {
+            localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
+        }
+
+        function compressImage(file, type, onDone) {
+            if (!file) return;
+            const { maxWidth, quality } = IMAGE_CONFIG[type];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    onDone(canvas.toDataURL('image/jpeg', quality));
                 };
-                reader.readAsDataURL(audioBlob);
-
-                stream.getTracks().forEach(track => track.stop());
-                clearInterval(recordInterval);
-                dom.recordTimer.classList.add('hidden');
-                dom.recordBtnText.textContent = 'إعادة تسجيل الفويس';
-                dom.recordBtnIcon.textContent = '🔄';
-                dom.recordAudioBtn.classList.remove('bg-red-500', 'animate-pulse');
-                dom.recordAudioBtn.classList.add('bg-pink-500');
+                img.src = e.target.result;
             };
-
-            mediaRecorder.start();
-            recordSeconds = 0;
-            dom.recordTimer.textContent = '00:00';
-            dom.recordTimer.classList.remove('hidden');
-
-            recordInterval = setInterval(() => {
-                recordSeconds++;
-                const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
-                const secs = String(recordSeconds % 60).padStart(2, '0');
-                dom.recordTimer.textContent = `${mins}:${secs}`;
-            }, 1000);
-
-            dom.recordBtnText.textContent = 'إيقاف وحفظ التسجيل ⏹️';
-            dom.recordBtnIcon.textContent = '⏹️';
-            dom.recordAudioBtn.classList.remove('bg-pink-500');
-            dom.recordAudioBtn.classList.add('bg-red-500', 'animate-pulse');
-
-        } catch (err) {
-            alert('يرجى السماح بالوصول إلى المايكروفون لتسجيل الفويس الصوتي! 🎙️');
+            reader.readAsDataURL(file);
         }
-    };
 
-    window.deleteRecordedAudio = function() {
-        recordedAudioBase64 = '';
-        dom.audioPlayer.src = '';
-        dom.audioPreview.classList.add('hidden');
-        dom.recordBtnText.textContent = 'ابدأ تسجيل فويس';
-        dom.recordBtnIcon.textContent = '🎙️';
-    };
+        function handleImage(e) {
+            compressImage(e.target.files[0], 'post', (b64) => {
+                currentImageBase64 = b64;
+                dom.preview.src = b64;
+                dom.preview.classList.remove('hidden');
+            });
+        }
+        document.getElementById('cameraInput').addEventListener('change', handleImage);
+        document.getElementById('galleryInput').addEventListener('change', handleImage);
 
-    function verifyPassword(inputPass) {
-        if (!inputPass) return false;
-        const hashedInput = hashString(inputPass);
-        const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
-        return hashedInput === currentHash || btoa(inputPass) === currentHash;
-    }
+        window.handleVerifiedPostImage = function(e) {
+            compressImage(e.target.files[0], 'verified', (b64) => {
+                verifiedPostImageBase64 = b64;
+                document.getElementById('vPostPreview').src = b64;
+                document.getElementById('vPostPreviewContainer').classList.remove('hidden');
+            });
+        };
 
-    window.handleAuthToggle = function() {
-        if (isAdminLoggedIn) {
-            if (confirm('هل ترغب بتسجيل الخروج من لوحة الأدمن؟')) {
-                sessionStorage.removeItem('randa_admin_auth');
-                sessionStorage.removeItem('randa_admin_session');
-                isAdminLoggedIn = false;
-                updateAdminUI();
-                location.reload();
+        window.cancelVerifiedPostImage = function() {
+            verifiedPostImageBase64 = '';
+            document.getElementById('vPostPreview').src = '';
+            document.getElementById('vPostPreviewContainer').classList.add('hidden');
+            document.getElementById('vPostImageInput').value = '';
+        };
+
+        window.handleCommentImage = function(e, postId) {
+            compressImage(e.target.files[0], 'comment', (b64) => {
+                commentImages[postId] = b64;
+                const prevElem = document.getElementById(`cPreview-${postId}`);
+                if (prevElem) {
+                    prevElem.src = b64;
+                    prevElem.classList.remove('hidden');
+                }
+            });
+        };
+
+        window.removeCommentImage = function(postId) {
+            delete commentImages[postId];
+            const prevElem = document.getElementById(`cPreview-${postId}`);
+            const inputElem = document.getElementById(`cImgInput-${postId}`);
+            if (prevElem) { prevElem.src = ''; prevElem.classList.add('hidden'); }
+            if (inputElem) inputElem.value = '';
+        };
+
+        window.openImageModal = function(src) {
+            if (!src) return;
+            document.getElementById('modalImg').src = src;
+            document.getElementById('imageModal').classList.remove('hidden');
+        };
+
+        window.closeImageModal = function() {
+            document.getElementById('imageModal').classList.add('hidden');
+            document.getElementById('modalImg').src = '';
+        };
+
+        window.toggleAudioRecording = async function() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                return;
             }
-        } else {
-            const pass = prompt('أدخل كلمة المرور للوصول إلى لوحة التحكم:');
-            if (pass !== null) {
-                if (verifyPassword(pass)) {
-                    sessionStorage.setItem('randa_admin_auth', 'true');
-                    if (window.cloudSessionToken) {
-                        sessionStorage.setItem('randa_admin_session', window.cloudSessionToken);
-                    }
-                    isAdminLoggedIn = true;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        recordedAudioBase64 = reader.result;
+                        dom.audioPlayer.src = recordedAudioBase64;
+                        dom.audioPreview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(audioBlob);
+
+                    stream.getTracks().forEach(track => track.stop());
+                    clearInterval(recordInterval);
+                    dom.recordTimer.classList.add('hidden');
+                    dom.recordBtnText.textContent = 'إعادة تسجيل الفويس';
+                    dom.recordBtnIcon.textContent = '🔄';
+                    dom.recordAudioBtn.classList.remove('bg-red-500', 'animate-pulse');
+                    dom.recordAudioBtn.classList.add('bg-pink-500');
+                };
+
+                mediaRecorder.start();
+                recordSeconds = 0;
+                dom.recordTimer.textContent = '00:00';
+                dom.recordTimer.classList.remove('hidden');
+
+                recordInterval = setInterval(() => {
+                    recordSeconds++;
+                    const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+                    const secs = String(recordSeconds % 60).padStart(2, '0');
+                    dom.recordTimer.textContent = `${mins}:${secs}`;
+                }, 1000);
+
+                dom.recordBtnText.textContent = 'إيقاف وحفظ التسجيل ⏹️';
+                dom.recordBtnIcon.textContent = '⏹️';
+                dom.recordAudioBtn.classList.remove('bg-pink-500');
+                dom.recordAudioBtn.classList.add('bg-red-500', 'animate-pulse');
+
+            } catch (err) {
+                alert('يرجى السماح بالوصول إلى المايكروفون لتسجيل الفويس الصوتي! 🎙️');
+            }
+        };
+
+        window.deleteRecordedAudio = function() {
+            recordedAudioBase64 = '';
+            dom.audioPlayer.src = '';
+            dom.audioPreview.classList.add('hidden');
+            dom.recordBtnText.textContent = 'ابدأ تسجيل فويس';
+            dom.recordBtnIcon.textContent = '🎙️';
+        };
+
+        function verifyPassword(inputPass) {
+            if (!inputPass) return false;
+            const hashedInput = hashString(inputPass);
+            const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
+            return hashedInput === currentHash || btoa(inputPass) === currentHash;
+        }
+
+        window.handleAuthToggle = function() {
+            if (isAdminLoggedIn) {
+                if (confirm('هل ترغب بتسجيل الخروج من لوحة الأدمن؟')) {
+                    sessionStorage.removeItem('randa_admin_auth');
+                    sessionStorage.removeItem('randa_admin_session');
+                    isAdminLoggedIn = false;
                     updateAdminUI();
-                    renderPosts();
-                    alert('أهلاً بك! تم تفعيل لوحة التحكم بنجاح 🌸✨');
-                } else {
-                    alert('كلمة المرور غير صحيحة! ❌');
+                    location.reload();
+                }
+            } else {
+                const pass = prompt('أدخل كلمة المرور للوصول إلى لوحة التحكم:');
+                if (pass !== null) {
+                    if (verifyPassword(pass)) {
+                        sessionStorage.setItem('randa_admin_auth', 'true');
+                        if (window.cloudSessionToken) {
+                            sessionStorage.setItem('randa_admin_session', window.cloudSessionToken);
+                        }
+                        isAdminLoggedIn = true;
+                        updateAdminUI();
+                        renderPosts();
+                        alert('أهلاً بك! تم تفعيل لوحة التحكم بنجاح 🌸✨');
+                    } else {
+                        alert('كلمة المرور غير صحيحة! ❌');
+                    }
                 }
             }
-        }
-    };
+        };
 
-    function updateAdminUI() {
-        const sections = ['addPostForm', 'adminBackupSection', 'adminFriendsPanel'];
-        const showAdmin = isAdminLoggedIn && !isViewerMode;
+        function updateAdminUI() {
+            const sections = ['addPostForm', 'adminBackupSection', 'adminFriendsPanel'];
+            const showAdmin = isAdminLoggedIn && !isViewerMode;
 
-        sections.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.toggle('hidden', !showAdmin);
-        });
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', !showAdmin);
+            });
 
-        dom.authBtn.innerHTML = showAdmin ? '🔒 خروج الأدمن' : '🔑 دخول الأدمن';
-        dom.authBtn.classList.toggle('bg-red-500/80', showAdmin);
-        dom.authBtn.classList.toggle('bg-white/20', !showAdmin);
-    }
-
-    window.changeAdminPassword = async function() {
-        if (!isAdminLoggedIn) return;
-        const oldPass = prompt('أدخل كلمة المرور الحالية لتأكيد الهوية:');
-        if (!verifyPassword(oldPass)) {
-            alert('كلمة المرور الحالية غير صحيحة! ❌');
-            return;
+            dom.authBtn.innerHTML = showAdmin ? '🔒 خروج الأدمن' : '🔑 دخول الأدمن';
+            dom.authBtn.classList.toggle('bg-red-500/80', showAdmin);
+            dom.authBtn.classList.toggle('bg-white/20', !showAdmin);
         }
 
-        const newPass = prompt('أدخل كلمة المرور الجديدة للأدمن:');
-        if (!newPass || !newPass.trim()) {
-            alert('لم يتم إدخال كلمة مرور جديدة!');
-            return;
-        }
+        window.changeAdminPassword = async function() {
+            if (!isAdminLoggedIn) return;
+            const oldPass = prompt('أدخل كلمة المرور الحالية لتأكيد الهوية:');
+            if (!verifyPassword(oldPass)) {
+                alert('كلمة المرور الحالية غير صحيحة! ❌');
+                return;
+            }
 
-        const encryptedHash = hashString(newPass.trim());
-        const newSessionToken = 'session_' + Date.now();
+            const newPass = prompt('أدخل كلمة المرور الجديدة للأدمن:');
+            if (!newPass || !newPass.trim()) {
+                alert('لم يتم إدخال كلمة مرور جديدة!');
+                return;
+            }
 
-        localStorage.setItem(STORAGE_KEYS.adminHash, encryptedHash);
-        sessionStorage.setItem('randa_admin_session', newSessionToken);
+            const encryptedHash = hashString(newPass.trim());
+            const newSessionToken = 'session_' + Date.now();
 
-        if (window.db) {
+            localStorage.setItem(STORAGE_KEYS.adminHash, encryptedHash);
+            sessionStorage.setItem('randa_admin_session', newSessionToken);
+
             try {
-                await window.setDoc(window.doc(window.db, "admin_config", "auth"), {
+                await setDoc(doc(db, "admin_config", "auth"), {
                     hash: encryptedHash,
                     sessionToken: newSessionToken
                 });
-            } catch(e) { console.error("Cloud pass sync error:", e); }
-        }
-
-        alert('تم تغيير كلمة المرور وطرد أي أجهزة أخرى بنجاح! 🔐');
-    };
-
-    function getLocalFriends() {
-        return Object.values(friendsPinsMap);
-    }
-
-    async function saveFriendPin(name, pin) {
-        if (!name || !pin) return;
-        const cleanKey = normalizeText(name);
-        const docId = getSafeDocId(name);
-        const friendObj = { name: name.trim(), pin: String(pin).trim(), key: cleanKey };
-
-        friendsPinsMap[cleanKey] = friendObj;
-        renderFriendsList();
-
-        if (window.db) {
-            try {
-                await window.setDoc(window.doc(window.db, "friends_pins", docId), friendObj);
-            } catch(e) { console.error("Cloud friend sync error:", e); }
-        }
-        renderPosts();
-    }
-
-    window.addFriendFromPanel = async function() {
-        if (!isAdminLoggedIn) return;
-        const name = document.getElementById('newFriendName').value.trim();
-        const pin = document.getElementById('newFriendPin').value.trim();
-        if (!name || !pin) {
-            alert('أدخل الاسم والكود السري! 🌸');
-            return;
-        }
-        await saveFriendPin(name, pin);
-        document.getElementById('newFriendName').value = '';
-        document.getElementById('newFriendPin').value = '';
-        alert(`تم حفظ كود (${name}) وتوثيقه بنجاح! 🔒✨`);
-    };
-
-    window.editFriendPin = async function(name, currentPin) {
-        if (!isAdminLoggedIn) return;
-        const newPin = prompt(`أدخل الكود السري الجديد لـ (${name}):`, currentPin);
-        if (newPin && newPin.trim()) {
-            await saveFriendPin(name, newPin.trim());
-            alert(`تم تحديث كود (${name}) بنجاح! 🔒`);
-        }
-    };
-
-    window.deleteFriend = async function(name) {
-        if (!isAdminLoggedIn) return;
-        if (confirm(`هل أنت متأكد من حذف كود (${name})؟`)) {
-            const cleanKey = normalizeText(name);
-            const docId = getSafeDocId(name);
-            delete friendsPinsMap[cleanKey];
-            renderFriendsList();
-
-            if (window.db) {
-                try { await window.deleteDoc(window.doc(window.db, "friends_pins", docId)); } catch(e){}
+                alert('تم تغيير كلمة المرور وطرد أي أجهزة أخرى بنجاح! 🔐');
+            } catch(e) {
+                alert('حدث خطأ أثناء المزامنة السحابية!');
+                console.error(e);
             }
-            renderPosts();
-        }
-    };
-
-    window.quickVerifyFriend = async function(postId, commentId, friendName) {
-        if (!isAdminLoggedIn) return;
-        const pin = prompt(`أدخل الكود السري الخاص بـ (${friendName}):`, '1234');
-        if (!pin || !pin.trim()) return;
-
-        await saveFriendPin(friendName, pin.trim());
-
-        const posts = window.currentDisplayedPosts || [];
-        const post = posts.find(p => String(p.id) === String(postId));
-        if (post && post.comments) {
-            const updatedComments = post.comments.map(c => {
-                if (c.id === commentId || normalizeText(c.name) === normalizeText(friendName)) {
-                    return { ...c, isVerified: true, pin: pin.trim() };
-                }
-                return c;
-            });
-
-            if (window.db) {
-                try {
-                    await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
-                } catch(e) { console.error("Verify comment sync error:", e); }
-            }
-        }
-        alert(`تم توثيق (${friendName}) بنجاح! 🌸✨`);
-    };
-
-    function renderFriendsList() {
-        if (!dom.friendsList) return;
-        const list = getLocalFriends();
-        if (!list || list.length === 0) {
-            dom.friendsList.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">لا يوجد كود محدد بعد</p>';
-            return;
-        }
-        dom.friendsList.innerHTML = list.map(f => `
-            <div class="flex justify-between items-center bg-pink-50 p-2.5 rounded-xl text-xs border border-pink-100 shadow-sm">
-                <span class="font-bold text-pink-700">🌸 ${esc(f.name)} <span class="text-gray-400 font-normal mr-1">(الكود: ${esc(f.pin)})</span></span>
-                <div class="flex gap-1">
-                    <button onclick="editFriendPin('${jsEsc(f.name)}', '${jsEsc(f.pin)}')" class="text-blue-600 font-bold px-2 py-0.5 rounded-lg hover:bg-blue-50 transition">✏️ تعديل</button>
-                    <button onclick="deleteFriend('${jsEsc(f.name)}')" class="text-red-500 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">🗑️ حذف</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    window.publishVerifiedUserPost = async function() {
-        const nameInput = document.getElementById('vPostName');
-        const pinInput = document.getElementById('vPostPin');
-        const textInput = document.getElementById('vPostText');
-        const submitBtn = document.getElementById('vPostSubmitBtn');
-
-        const nameVal = nameInput.value.trim();
-        const pinVal = pinInput.value.trim();
-        const textVal = textInput.value.trim();
-
-        if (!nameVal || !pinVal) {
-            alert('يرجى كتابة الاسم الموثق والكود السري لتتمكن من النشر 🔒🌸');
-            return;
-        }
-
-        if (!verifiedPostImageBase64 && !textVal) {
-            alert('يرجى إدراج صورة أو كتابة نص للنشر 🌸');
-            return;
-        }
-
-        const nameKey = normalizeText(nameVal);
-        const docId = getSafeDocId(nameVal);
-
-        if (window.db) {
-            try {
-                const snap = await window.getDoc(window.doc(window.db, "friends_pins", docId));
-                if (snap.exists()) friendsPinsMap[nameKey] = snap.data();
-            } catch(e) {}
-        }
-
-        const registeredFriend = friendsPinsMap[nameKey];
-        if (!registeredFriend || String(registeredFriend.pin).trim() !== String(pinVal).trim()) {
-            alert('❌ عذراً! الاسم أو الكود السري غير صحيح، النشر مخصص للحسابات الموثوقة فقط.');
-            return;
-        }
-
-        localStorage.setItem(STORAGE_KEYS.friendName, nameVal);
-        localStorage.setItem(STORAGE_KEYS.friendPin, pinVal);
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = 'جاري النشر في الألبوم... ⏳';
-
-        const newPost = {
-            id: Date.now(),
-            date: `${new Date().toLocaleString('ar-PS')} (بواسطة ${nameVal} ✨)`,
-            image: verifiedPostImageBase64,
-            ar: textVal,
-            audio: '',
-            isPublic: true,
-            likes: 0,
-            likesList: [],
-            comments: []
         };
 
-        if (window.db) {
+        function getLocalFriends() {
+            return Object.values(friendsPinsMap);
+        }
+
+        async function saveFriendPin(name, pin) {
+            if (!name || !pin) return;
+            const cleanKey = normalizeText(name);
+            const docId = getSafeDocId(name);
+            const friendObj = { name: name.trim(), pin: String(pin).trim(), key: cleanKey };
+
+            friendsPinsMap[cleanKey] = friendObj;
+            renderFriendsList();
+
             try {
-                await window.setDoc(window.doc(window.db, "public_posts", String(newPost.id)), newPost);
-                alert('تم نشر صورتك بنجاح في الألبوم العام! 🌸🎉');
-                textInput.value = '';
-                cancelVerifiedPostImage();
-            } catch (err) {
-                alert('حدث خطأ أثناء النشر، حاول مجدداً!');
-                console.error(err);
+                await setDoc(doc(db, "friends_pins", docId), friendObj);
+            } catch(e) { console.error("Cloud friend sync error:", e); }
+            renderPosts();
+        }
+
+        window.addFriendFromPanel = async function() {
+            if (!isAdminLoggedIn) return;
+            const name = document.getElementById('newFriendName').value.trim();
+            const pin = document.getElementById('newFriendPin').value.trim();
+            if (!name || !pin) {
+                alert('أدخل الاسم والكود السري! 🌸');
+                return;
             }
-        }
+            await saveFriendPin(name, pin);
+            document.getElementById('newFriendName').value = '';
+            document.getElementById('newFriendPin').value = '';
+            alert(`تم حفظ كود (${name}) وتوثيقه بنجاح! 🔒✨`);
+        };
 
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>نشر الصورة في الألبوم</span> 🌸🚀';
-    };
-
-    async function syncToCloud(post) {
-        if (!window.db) return;
-        try {
-            if (post.isPublic) {
-                await window.setDoc(window.doc(window.db, "public_posts", String(post.id)), post, { merge: true });
-            } else {
-                await window.deleteDoc(window.doc(window.db, "public_posts", String(post.id)));
+        window.editFriendPin = async function(name, currentPin) {
+            if (!isAdminLoggedIn) return;
+            const newPin = prompt(`أدخل الكود السري الجديد لـ (${name}):`, currentPin);
+            if (newPin && newPin.trim()) {
+                await saveFriendPin(name, newPin.trim());
+                alert(`تم تحديث كود (${name}) بنجاح! 🔒`);
             }
-        } catch(e) {
-            console.error("Firebase Sync Error: ", e);
+        };
+
+        window.deleteFriend = async function(name) {
+            if (!isAdminLoggedIn) return;
+            if (confirm(`هل أنت متأكد من حذف كود (${name})؟`)) {
+                const cleanKey = normalizeText(name);
+                const docId = getSafeDocId(name);
+                delete friendsPinsMap[cleanKey];
+                renderFriendsList();
+
+                try { await deleteDoc(doc(db, "friends_pins", docId)); } catch(e){}
+                renderPosts();
+            }
+        };
+
+        window.quickVerifyFriend = async function(postId, commentId, friendName) {
+            if (!isAdminLoggedIn) return;
+            const pin = prompt(`أدخل الكود السري الخاص بـ (${friendName}):`, '1234');
+            if (!pin || !pin.trim()) return;
+
+            await saveFriendPin(friendName, pin.trim());
+
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (post && post.comments) {
+                const updatedComments = post.comments.map(c => {
+                    if (c.id === commentId || normalizeText(c.name) === normalizeText(friendName)) {
+                        return { ...c, isVerified: true, pin: pin.trim() };
+                    }
+                    return c;
+                });
+
+                try {
+                    await setDoc(doc(db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+                } catch(e) { console.error("Verify comment sync error:", e); }
+            }
+            alert(`تم توثيق (${friendName}) بنجاح! 🌸✨`);
+        };
+
+        function renderFriendsList() {
+            if (!dom.friendsList) return;
+            const list = getLocalFriends();
+            if (!list || list.length === 0) {
+                dom.friendsList.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">لا يوجد كود محدد بعد</p>';
+                return;
+            }
+            dom.friendsList.innerHTML = list.map(f => `
+                <div class="flex justify-between items-center bg-pink-50 p-2.5 rounded-xl text-xs border border-pink-100 shadow-sm">
+                    <span class="font-bold text-pink-700">🌸 ${esc(f.name)} <span class="text-gray-400 font-normal mr-1">(الكود: ${esc(f.pin)})</span></span>
+                    <div class="flex gap-1">
+                        <button onclick="editFriendPin('${jsEsc(f.name)}', '${jsEsc(f.pin)}')" class="text-blue-600 font-bold px-2 py-0.5 rounded-lg hover:bg-blue-50 transition">✏️ تعديل</button>
+                        <button onclick="deleteFriend('${jsEsc(f.name)}')" class="text-red-500 font-bold px-2 py-0.5 rounded-lg hover:bg-red-50 transition">🗑️ حذف</button>
+                    </div>
+                </div>
+            `).join('');
         }
-    }
 
-    async function removeFromCloud(postId) {
-        if (!window.db) return;
-        try {
-            await window.deleteDoc(window.doc(window.db, "public_posts", String(postId)));
-        } catch(e) {
-            console.error("Firebase Remove Error: ", e);
-        }
-    }
+        window.publishVerifiedUserPost = async function() {
+            const nameInput = document.getElementById('vPostName');
+            const pinInput = document.getElementById('vPostPin');
+            const textInput = document.getElementById('vPostText');
+            const submitBtn = document.getElementById('vPostSubmitBtn');
 
-    function resetPostForm() {
-        editingId = null;
-        currentImageBase64 = '';
-        dom.preview.classList.add('hidden');
-        dom.preview.src = '';
-        dom.arText.value = '';
-        deleteRecordedAudio();
-        document.getElementById('privPrivate').checked = true;
-        dom.formTitle.textContent = 'إضافة يومية جديدة ✨';
-        dom.saveBtn.querySelector('span').textContent = 'نشر اليومية';
-        dom.cancelEditBtn.classList.add('hidden');
-    }
+            const nameVal = nameInput.value.trim();
+            const pinVal = pinInput.value.trim();
+            const textVal = textInput.value.trim();
 
-    dom.saveBtn.addEventListener('click', async () => {
-        if (!isAdminLoggedIn) return;
-        if (!currentImageBase64 && !dom.arText.value && !recordedAudioBase64) {
-            alert('اكتبي نصاً أو سجلي صوتاً أو أدرجي صورة أولاً! 🌸');
-            return;
-        }
+            if (!nameVal || !pinVal) {
+                alert('يرجى كتابة الاسم الموثق والكود السري لتتمكن من النشر 🔒🌸');
+                return;
+            }
 
-        const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
-        let posts = getLocalPosts();
-        let updatedPost = null;
+            if (!verifiedPostImageBase64 && !textVal) {
+                alert('يرجى إدراج صورة أو كتابة نص للنشر 🌸');
+                return;
+            }
 
-        if (editingId) {
-            posts = posts.map(p => {
-                if (p.id === editingId) {
-                    updatedPost = {
-                        ...p,
-                        ar: dom.arText.value,
-                        audio: recordedAudioBase64 || p.audio || '',
-                        image: currentImageBase64 || p.image,
-                        isPublic: isPublicChoice
-                    };
-                    return updatedPost;
-                }
-                return p;
-            });
-        } else {
-            updatedPost = {
+            const nameKey = normalizeText(nameVal);
+            const docId = getSafeDocId(nameVal);
+
+            try {
+                const snap = await getDoc(doc(db, "friends_pins", docId));
+                if (snap.exists()) friendsPinsMap[nameKey] = snap.data();
+            } catch(e) {}
+
+            const registeredFriend = friendsPinsMap[nameKey];
+            if (!registeredFriend || String(registeredFriend.pin).trim() !== String(pinVal).trim()) {
+                alert('❌ عذراً! الاسم أو الكود السري غير صحيح، النشر مخصص للحسابات الموثوقة فقط.');
+                return;
+            }
+
+            localStorage.setItem(STORAGE_KEYS.friendName, nameVal);
+            localStorage.setItem(STORAGE_KEYS.friendPin, pinVal);
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'جاري النشر في الألبوم... ⏳';
+
+            const newPost = {
                 id: Date.now(),
-                date: new Date().toLocaleString('ar-PS'),
-                image: currentImageBase64,
-                ar: dom.arText.value,
-                audio: recordedAudioBase64,
-                isPublic: isPublicChoice,
+                date: `${new Date().toLocaleString('ar-PS')} (بواسطة ${nameVal} ✨)`,
+                image: verifiedPostImageBase64,
+                ar: textVal,
+                audio: '',
+                isPublic: true,
                 likes: 0,
                 likesList: [],
                 comments: []
             };
-            posts.unshift(updatedPost);
-        }
 
-        saveLocalPosts(posts);
-        await syncToCloud(updatedPost);
-        resetPostForm();
-        renderPosts();
-    });
-
-    dom.cancelEditBtn.addEventListener('click', resetPostForm);
-
-    window.deletePost = async function(id) {
-        if (!isAdminLoggedIn) return;
-        if (confirm('هل أنت متأكد من حذف هذه اليومية؟')) {
-            let posts = getLocalPosts().filter(p => p.id !== id);
-            saveLocalPosts(posts);
-            await removeFromCloud(id);
-            renderPosts();
-        }
-    };
-
-    window.togglePrivacy = async function(id) {
-        if (!isAdminLoggedIn) return;
-        let posts = getLocalPosts();
-        let changedPost = null;
-        posts = posts.map(p => {
-            if (p.id === id) {
-                changedPost = { ...p, isPublic: !p.isPublic };
-                return changedPost;
-            }
-            return p;
-        });
-        saveLocalPosts(posts);
-        if (changedPost) await syncToCloud(changedPost);
-        renderPosts();
-    };
-
-    window.editPost = function(id) {
-        if (!isAdminLoggedIn) return;
-        const post = getLocalPosts().find(p => p.id === id);
-        if (!post) return;
-
-        editingId = id;
-        dom.arText.value = post.ar || '';
-
-        if (post.audio) {
-            recordedAudioBase64 = post.audio;
-            dom.audioPlayer.src = post.audio;
-            dom.audioPreview.classList.remove('hidden');
-        } else {
-            deleteRecordedAudio();
-        }
-
-        (post.isPublic ? document.getElementById('privPublic') : document.getElementById('privPrivate')).checked = true;
-
-        if (post.image) {
-            currentImageBase64 = post.image;
-            dom.preview.src = post.image;
-            dom.preview.classList.remove('hidden');
-        } else {
-            currentImageBase64 = '';
-            dom.preview.classList.add('hidden');
-        }
-
-        dom.formTitle.textContent = 'تعديل اليومية ✍️';
-        dom.saveBtn.querySelector('span').textContent = 'حفظ التعديلات';
-        dom.cancelEditBtn.classList.remove('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    window.likePost = async function(postId) {
-        if (!window.db) return;
-
-        let userName = localStorage.getItem(STORAGE_KEYS.friendName) || prompt('أدخل اسمك لتسجيل الإعجاب 🌸:');
-        if (!userName || !userName.trim()) return;
-        userName = userName.trim();
-        localStorage.setItem(STORAGE_KEYS.friendName, userName);
-
-        const userPin = localStorage.getItem(STORAGE_KEYS.friendPin) || '';
-        const nameKey = normalizeText(userName);
-        const regFriend = friendsPinsMap[nameKey];
-        const isVerifiedLike = (regFriend && regFriend.pin === userPin);
-
-        const posts = window.currentDisplayedPosts || [];
-        const post = posts.find(p => String(p.id) === String(postId));
-        let currentLikesList = (post && Array.isArray(post.likesList)) ? [...post.likesList] : [];
-
-        const existingIndex = currentLikesList.findIndex(l => normalizeText(l.name) === nameKey);
-        if (existingIndex !== -1) {
-            currentLikesList.splice(existingIndex, 1);
-        } else {
-            currentLikesList.push({
-                name: userName,
-                isVerified: isVerifiedLike,
-                date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
-            });
-        }
-
-        try {
-            await window.setDoc(window.doc(window.db, "public_posts", String(postId)), {
-                likes: currentLikesList.length,
-                likesList: currentLikesList
-            }, { merge: true });
-        } catch(e) { console.error("Like error:", e); }
-    };
-
-    window.showLikesList = function(postId) {
-        const posts = window.currentDisplayedPosts || [];
-        const post = posts.find(p => String(p.id) === String(postId));
-        if (!post || !post.likesList || post.likesList.length === 0) {
-            alert('لا توجد إعجابات مسجلة بعد 🌸');
-            return;
-        }
-        const names = post.likesList.map(l => `${l.isVerified ? '✨ ' : '👤 '}${l.name}`).join('\n');
-        alert(`❤️ قائمة المعجبين (${post.likesList.length}):\n\n${names}`);
-    };
-
-    function isCommentVerified(c) {
-        if (c.isVerified === true) return true;
-        const registeredFriend = friendsPinsMap[normalizeText(c.name)];
-        if (registeredFriend && c.pin && String(c.pin).trim() === String(registeredFriend.pin).trim()) {
-            return true;
-        }
-        return false;
-    }
-
-    window.addComment = async function(postId) {
-        const nameInput = document.getElementById(`cName-${postId}`);
-        const pinInput = document.getElementById(`cPin-${postId}`);
-        const textInput = document.getElementById(`cText-${postId}`);
-
-        if (!nameInput || !textInput) return;
-        const nameVal = nameInput.value.trim();
-        const pinVal = pinInput ? pinInput.value.trim() : '';
-        const textVal = textInput.value.trim();
-        const commentImg = commentImages[postId] || null;
-
-        if (!nameVal || (!textVal && !commentImg)) {
-            alert('يرجى كتابة الاسم والتعليق أو اختيار صورة 🌸');
-            return;
-        }
-
-        const nameKey = normalizeText(nameVal);
-        const docId = getSafeDocId(nameVal);
-
-        if (window.db) {
             try {
-                const snap = await window.getDoc(window.doc(window.db, "friends_pins", docId));
-                if (snap.exists()) friendsPinsMap[nameKey] = snap.data();
-            } catch(e) { console.error("Verify pin fetch error:", e); }
-        }
-
-        const registeredFriend = friendsPinsMap[nameKey];
-        let isVerified = false;
-
-        if (registeredFriend) {
-            if (String(registeredFriend.pin).trim() === String(pinVal).trim()) {
-                isVerified = true;
-            } else {
-                alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
-                return;
+                await setDoc(doc(db, "public_posts", String(newPost.id)), newPost);
+                alert('تم نشر صورتك بنجاح في الألبوم العام! 🌸🎉');
+                textInput.value = '';
+                cancelVerifiedPostImage();
+            } catch (err) {
+                alert('حدث خطأ أثناء النشر، تأكد من اتصال الإنترنت وحاول مجدداً!');
+                console.error(err);
             }
-        }
 
-        if (commentImg && !isVerified) {
-            alert('عذراً! ميزة إرفاق الصور في التعليقات مخصصة للحسابات الموثوقة بكود سري فقط 🔒🌸');
-            return;
-        }
-
-        localStorage.setItem(STORAGE_KEYS.friendName, nameVal);
-        if (pinVal) localStorage.setItem(STORAGE_KEYS.friendPin, pinVal);
-
-        const newComment = {
-            id: Date.now(),
-            name: nameVal,
-            pin: pinVal,
-            text: textVal,
-            image: commentImg,
-            isVerified: isVerified,
-            date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>نشر الصورة في الألبوم</span> 🌸🚀';
         };
 
-        const posts = window.currentDisplayedPosts || [];
-        const post = posts.find(p => String(p.id) === String(postId));
-        const existingComments = (post && post.comments && Array.isArray(post.comments)) ? post.comments : [];
-        const updatedComments = [...existingComments, newComment];
-
-        if (window.db) {
+        async function syncToCloud(post) {
             try {
-                await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+                if (post.isPublic) {
+                    await setDoc(doc(db, "public_posts", String(post.id)), post, { merge: true });
+                } else {
+                    await deleteDoc(doc(db, "public_posts", String(post.id)));
+                }
+            } catch(e) {
+                alert('تنبيه: فشلت المزامنة السحابية للبوست مع Firebase! ❌');
+                console.error("Firebase Sync Error: ", e);
+            }
+        }
+
+        async function removeFromCloud(postId) {
+            try {
+                await deleteDoc(doc(db, "public_posts", String(postId)));
+            } catch(e) {
+                console.error("Firebase Remove Error: ", e);
+            }
+        }
+
+        function resetPostForm() {
+            editingId = null;
+            currentImageBase64 = '';
+            dom.preview.classList.add('hidden');
+            dom.preview.src = '';
+            dom.arText.value = '';
+            deleteRecordedAudio();
+            document.getElementById('privPrivate').checked = true;
+            dom.formTitle.textContent = 'إضافة يومية جديدة ✨';
+            dom.saveBtn.querySelector('span').textContent = 'نشر اليومية';
+            dom.cancelEditBtn.classList.add('hidden');
+        }
+
+        dom.saveBtn.addEventListener('click', async () => {
+            if (!isAdminLoggedIn) return;
+            if (!currentImageBase64 && !dom.arText.value && !recordedAudioBase64) {
+                alert('اكتبي نصاً أو سجلي صوتاً أو أدرجي صورة أولاً! 🌸');
+                return;
+            }
+
+            const isPublicChoice = document.querySelector('input[name="privacyOpt"]:checked').value === 'public';
+            let posts = getLocalPosts();
+            let updatedPost = null;
+
+            if (editingId) {
+                posts = posts.map(p => {
+                    if (p.id === editingId) {
+                        updatedPost = {
+                            ...p,
+                            ar: dom.arText.value,
+                            audio: recordedAudioBase64 || p.audio || '',
+                            image: currentImageBase64 || p.image,
+                            isPublic: isPublicChoice
+                        };
+                        return updatedPost;
+                    }
+                    return p;
+                });
+            } else {
+                updatedPost = {
+                    id: Date.now(),
+                    date: new Date().toLocaleString('ar-PS'),
+                    image: currentImageBase64,
+                    ar: dom.arText.value,
+                    audio: recordedAudioBase64,
+                    isPublic: isPublicChoice,
+                    likes: 0,
+                    likesList: [],
+                    comments: []
+                };
+                posts.unshift(updatedPost);
+            }
+
+            saveLocalPosts(posts);
+            await syncToCloud(updatedPost);
+            resetPostForm();
+            renderPosts();
+        });
+
+        dom.cancelEditBtn.addEventListener('click', resetPostForm);
+
+        window.deletePost = async function(id) {
+            if (!isAdminLoggedIn) return;
+            if (confirm('هل أنت متأكد من حذف هذه اليومية؟')) {
+                let posts = getLocalPosts().filter(p => p.id !== id);
+                saveLocalPosts(posts);
+                await removeFromCloud(id);
+                renderPosts();
+            }
+        };
+
+        window.togglePrivacy = async function(id) {
+            if (!isAdminLoggedIn) return;
+            let posts = getLocalPosts();
+            let changedPost = null;
+            posts = posts.map(p => {
+                if (p.id === id) {
+                    changedPost = { ...p, isPublic: !p.isPublic };
+                    return changedPost;
+                }
+                return p;
+            });
+            saveLocalPosts(posts);
+            if (changedPost) await syncToCloud(changedPost);
+            renderPosts();
+        };
+
+        window.editPost = function(id) {
+            if (!isAdminLoggedIn) return;
+            const post = getLocalPosts().find(p => p.id === id) || (window.currentCloudPosts || []).find(p => p.id === id);
+            if (!post) return;
+
+            editingId = id;
+            dom.arText.value = post.ar || '';
+
+            if (post.audio) {
+                recordedAudioBase64 = post.audio;
+                dom.audioPlayer.src = post.audio;
+                dom.audioPreview.classList.remove('hidden');
+            } else {
+                deleteRecordedAudio();
+            }
+
+            (post.isPublic ? document.getElementById('privPublic') : document.getElementById('privPrivate')).checked = true;
+
+            if (post.image) {
+                currentImageBase64 = post.image;
+                dom.preview.src = post.image;
+                dom.preview.classList.remove('hidden');
+            } else {
+                currentImageBase64 = '';
+                dom.preview.classList.add('hidden');
+            }
+
+            dom.formTitle.textContent = 'تعديل اليومية ✍️';
+            dom.saveBtn.querySelector('span').textContent = 'حفظ التعديلات';
+            dom.cancelEditBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.likePost = async function(postId) {
+            let userName = localStorage.getItem(STORAGE_KEYS.friendName) || prompt('أدخل اسمك لتسجيل الإعجاب 🌸:');
+            if (!userName || !userName.trim()) return;
+            userName = userName.trim();
+            localStorage.setItem(STORAGE_KEYS.friendName, userName);
+
+            const userPin = localStorage.getItem(STORAGE_KEYS.friendPin) || '';
+            const nameKey = normalizeText(userName);
+            const regFriend = friendsPinsMap[nameKey];
+            const isVerifiedLike = (regFriend && regFriend.pin === userPin);
+
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            let currentLikesList = (post && Array.isArray(post.likesList)) ? [...post.likesList] : [];
+
+            const existingIndex = currentLikesList.findIndex(l => normalizeText(l.name) === nameKey);
+            if (existingIndex !== -1) {
+                currentLikesList.splice(existingIndex, 1);
+            } else {
+                currentLikesList.push({
+                    name: userName,
+                    isVerified: isVerifiedLike,
+                    date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
+                });
+            }
+
+            try {
+                await setDoc(doc(db, "public_posts", String(postId)), {
+                    likes: currentLikesList.length,
+                    likesList: currentLikesList
+                }, { merge: true });
+            } catch(e) { console.error("Like error:", e); }
+        };
+
+        window.showLikesList = function(postId) {
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (!post || !post.likesList || post.likesList.length === 0) {
+                alert('لا توجد إعجابات مسجلة بعد 🌸');
+                return;
+            }
+            const names = post.likesList.map(l => `${l.isVerified ? '✨ ' : '👤 '}${l.name}`).join('\n');
+            alert(`❤️ قائمة المعجبين (${post.likesList.length}):\n\n${names}`);
+        };
+
+        function isCommentVerified(c) {
+            if (c.isVerified === true) return true;
+            const registeredFriend = friendsPinsMap[normalizeText(c.name)];
+            if (registeredFriend && c.pin && String(c.pin).trim() === String(registeredFriend.pin).trim()) {
+                return true;
+            }
+            return false;
+        }
+
+        window.addComment = async function(postId) {
+            const nameInput = document.getElementById(`cName-${postId}`);
+            const pinInput = document.getElementById(`cPin-${postId}`);
+            const textInput = document.getElementById(`cText-${postId}`);
+
+            if (!nameInput || !textInput) return;
+            const nameVal = nameInput.value.trim();
+            const pinVal = pinInput ? pinInput.value.trim() : '';
+            const textVal = textInput.value.trim();
+            const commentImg = commentImages[postId] || null;
+
+            if (!nameVal || (!textVal && !commentImg)) {
+                alert('يرجى كتابة الاسم والتعليق أو اختيار صورة 🌸');
+                return;
+            }
+
+            const nameKey = normalizeText(nameVal);
+            const docId = getSafeDocId(nameVal);
+
+            try {
+                const snap = await getDoc(doc(db, "friends_pins", docId));
+                if (snap.exists()) friendsPinsMap[nameKey] = snap.data();
+            } catch(e) { console.error("Verify pin fetch error:", e); }
+
+            const registeredFriend = friendsPinsMap[nameKey];
+            let isVerified = false;
+
+            if (registeredFriend) {
+                if (String(registeredFriend.pin).trim() === String(pinVal).trim()) {
+                    isVerified = true;
+                } else {
+                    alert(`عذراً! الاسم (${nameVal}) محمي بكود سري 🔒\nيرجى إدخال الكود السري الصحيح لتأكيد التوثيق.`);
+                    return;
+                }
+            }
+
+            if (commentImg && !isVerified) {
+                alert('عذراً! ميزة إرفاق الصور في التعليقات مخصصة للحسابات الموثوقة بكود سري فقط 🔒🌸');
+                return;
+            }
+
+            localStorage.setItem(STORAGE_KEYS.friendName, nameVal);
+            if (pinVal) localStorage.setItem(STORAGE_KEYS.friendPin, pinVal);
+
+            const newComment = {
+                id: Date.now(),
+                name: nameVal,
+                pin: pinVal,
+                text: textVal,
+                image: commentImg,
+                isVerified: isVerified,
+                date: new Date().toLocaleTimeString('ar-PS', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            const existingComments = (post && post.comments && Array.isArray(post.comments)) ? post.comments : [];
+            const updatedComments = [...existingComments, newComment];
+
+            try {
+                await setDoc(doc(db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
                 textInput.value = '';
                 removeCommentImage(postId);
             } catch(e) { console.error("Comment error:", e); }
-        }
-    };
+        };
 
-    window.deleteComment = async function(postId, commentId) {
-        if (!isAdminLoggedIn) return;
-        if (!confirm('هل أنت متأكد من حذف هذا التعليق؟ 🌸')) return;
+        window.deleteComment = async function(postId, commentId) {
+            if (!isAdminLoggedIn) return;
+            if (!confirm('هل أنت متأكد من حذف هذا التعليق؟ 🌸')) return;
 
-        const posts = window.currentDisplayedPosts || [];
-        const post = posts.find(p => String(p.id) === String(postId));
-        if (!post || !post.comments) return;
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (!post || !post.comments) return;
 
-        const updatedComments = post.comments.filter(c => c.id !== commentId);
+            const updatedComments = post.comments.filter(c => c.id !== commentId);
 
-        try {
-            await window.setDoc(window.doc(window.db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
-        } catch(e) { console.error("Delete comment error:", e); }
-    };
+            try {
+                await setDoc(doc(db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+            } catch(e) { console.error("Delete comment error:", e); }
+        };
 
-    function renderPostCard(post) {
-        const pid = post.id;
-        const isAdmin = isAdminLoggedIn && !isViewerMode;
-        const myName = localStorage.getItem(STORAGE_KEYS.friendName) || '';
-        const iLiked = (post.likesList || []).some(l => normalizeText(l.name) === normalizeText(myName));
-        
-        const comments = (post.comments && Array.isArray(post.comments)) ? [...post.comments].reverse() : [];
+        function renderPostCard(post) {
+            const pid = post.id;
+            const isAdmin = isAdminLoggedIn && !isViewerMode;
+            const myName = localStorage.getItem(STORAGE_KEYS.friendName) || '';
+            const iLiked = (post.likesList || []).some(l => normalizeText(l.name) === normalizeText(myName));
+            
+            const comments = (post.comments && Array.isArray(post.comments)) ? [...post.comments].reverse() : [];
 
-        const adminControls = (!post.isDad && isAdmin) ? `
-            <div class="flex gap-1">
-                <button onclick="togglePrivacy(${pid})" class="text-[10px] bg-purple-50 text-purple-600 font-bold px-2 py-1 rounded-lg border border-purple-200">${post.isPublic ? '🌐 عام' : '🔒 خاص'}</button>
-                <button onclick="editPost(${pid})" class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-200">✏️ تعديل</button>
-                <button onclick="deletePost(${pid})" class="text-[10px] bg-red-50 text-red-500 font-bold px-2 py-1 rounded-lg border border-red-200">🗑️</button>
-            </div>` : '';
+            const adminControls = (!post.isDad && isAdmin) ? `
+                <div class="flex gap-1">
+                    <button onclick="togglePrivacy(${pid})" class="text-[10px] bg-purple-50 text-purple-600 font-bold px-2 py-1 rounded-lg border border-purple-200">${post.isPublic ? '🌐 عام' : '🔒 خاص'}</button>
+                    <button onclick="editPost(${pid})" class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-200">✏️ تعديل</button>
+                    <button onclick="deletePost(${pid})" class="text-[10px] bg-red-50 text-red-500 font-bold px-2 py-1 rounded-lg border border-red-200">🗑️</button>
+                </div>` : '';
 
-        const commentsHtml = comments.map(c => {
-            const verified = isCommentVerified(c);
+            const commentsHtml = comments.map(c => {
+                const verified = isCommentVerified(c);
+                return `
+                <div class="bg-pink-50/50 rounded-2xl p-2.5 border border-pink-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] font-bold ${verified ? 'text-pink-600' : 'text-gray-600'}">
+                            ${verified ? '✨' : '👤'} ${esc(c.name)}
+                            <span class="text-gray-400 font-normal mr-1">${c.date || ''}</span>
+                        </span>
+                        ${isAdmin ? `<button onclick="deleteComment(${pid}, ${c.id})" class="text-red-400 text-[10px] font-bold">🗑️</button>` : ''}
+                    </div>
+                    ${c.text ? `<p class="text-xs text-gray-700 leading-relaxed">${esc(c.text)}</p>` : ''}
+                    ${c.image ? `<img src="${c.image}" class="w-full max-h-48 object-cover rounded-xl mt-1.5 cursor-pointer" onclick="openImageModal(this.src)">` : ''}
+                    ${(!verified && isAdmin) ? `<button onclick="quickVerifyFriend(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-[10px] text-purple-600 font-bold mt-1 hover:underline">🔑 توثيق</button>` : ''}
+                </div>`;
+            }).join('');
+
             return `
-            <div class="bg-pink-50/50 rounded-2xl p-2.5 border border-pink-100">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-[11px] font-bold ${verified ? 'text-pink-600' : 'text-gray-600'}">
-                        ${verified ? '✨' : '👤'} ${esc(c.name)}
-                        <span class="text-gray-400 font-normal mr-1">${c.date || ''}</span>
-                    </span>
-                    ${isAdmin ? `<button onclick="deleteComment(${pid}, ${c.id})" class="text-red-400 text-[10px] font-bold">🗑️</button>` : ''}
+            <div class="post-card bg-white rounded-3xl shadow-md overflow-hidden border border-pink-100">
+                ${post.image ? `<img src="${post.image}" class="w-full max-h-96 object-cover cursor-pointer" onclick="openImageModal(this.src)">` : ''}
+                <div class="p-4">
+                    <div class="flex justify-between items-start gap-2 mb-2">
+                        <span class="text-[11px] text-gray-400 font-bold">${esc(post.date || '')}</span>
+                        ${adminControls}
+                    </div>
+                    ${post.ar ? `<p class="text-sm text-gray-700 leading-relaxed mb-3 whitespace-pre-line">${esc(post.ar)}</p>` : ''}
+                    ${post.audio ? `<audio controls src="${post.audio}" class="w-full h-9 mb-3"></audio>` : ''}
+
+                    ${!post.isDad ? `
+                    <div class="flex items-center gap-3 border-t border-pink-100 pt-3">
+                        <button onclick="likePost(${pid})" class="flex items-center gap-1.5 bg-pink-50 ${iLiked ? 'text-pink-600' : 'text-gray-500'} font-bold text-xs px-3 py-1.5 rounded-xl border border-pink-100 hover:bg-pink-100 transition">
+                            ${iLiked ? '❤️' : '🤍'} <span>${(post.likesList && post.likesList.length) ? post.likesList.length : (post.likes || 0)}</span>
+                        </button>
+                        <button onclick="showLikesList(${pid})" class="text-[11px] text-pink-500 font-bold hover:underline">المعجبين 👀</button>
+                        <span class="text-xs text-gray-400 font-bold mr-auto">${comments.length} تعليق</span>
+                    </div>
+
+                    <div class="mt-3 space-y-2">
+                        <div class="flex gap-1.5">
+                            <input type="text" id="cName-${pid}" value="${esc(localStorage.getItem(STORAGE_KEYS.friendName) || '')}" placeholder="الاسم 🌸" class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
+                            <input type="password" id="cPin-${pid}" value="${esc(localStorage.getItem(STORAGE_KEYS.friendPin) || '')}" placeholder="الكود 🔒" class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
+                            <input type="text" id="cText-${pid}" placeholder="تعليقك..." class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="document.getElementById('cImgInput-${pid}').click()" class="text-[11px] bg-pink-50 border border-dashed border-pink-300 text-pink-600 font-bold px-3 py-1.5 rounded-xl hover:bg-pink-100 transition">📷 صورة</button>
+                            <input type="file" id="cImgInput-${pid}" accept="image/*" class="hidden" onchange="handleCommentImage(event, ${pid})">
+                            <button onclick="addComment(${pid})" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-[11px] py-1.5 rounded-xl hover:opacity-90 transition">نشر التعليق ✨</button>
+                        </div>
+                        <div class="relative inline-block self-start">
+                            <img id="cPreview-${pid}" class="hidden w-16 h-16 object-cover rounded-xl border border-pink-300 shadow-sm mt-1">
+                        </div>
+                        ${commentsHtml}
+                    </div>
+                    ` : ''}
                 </div>
-                ${c.text ? `<p class="text-xs text-gray-700 leading-relaxed">${esc(c.text)}</p>` : ''}
-                ${c.image ? `<img src="${c.image}" class="w-full max-h-48 object-cover rounded-xl mt-1.5 cursor-pointer" onclick="openImageModal(this.src)">` : ''}
-                ${(!verified && isAdmin) ? `<button onclick="quickVerifyFriend(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-[10px] text-purple-600 font-bold mt-1 hover:underline">🔑 توثيق</button>` : ''}
             </div>`;
-        }).join('');
+        }
 
-        return `
-        <div class="post-card bg-white rounded-3xl shadow-md overflow-hidden border border-pink-100">
-            ${post.image ? `<img src="${post.image}" class="w-full max-h-96 object-cover cursor-pointer" onclick="openImageModal(this.src)">` : ''}
-            <div class="p-4">
-                <div class="flex justify-between items-start gap-2 mb-2">
-                    <span class="text-[11px] text-gray-400 font-bold">${esc(post.date || '')}</span>
-                    ${adminControls}
-                </div>
-                ${post.ar ? `<p class="text-sm text-gray-700 leading-relaxed mb-3 whitespace-pre-line">${esc(post.ar)}</p>` : ''}
-                ${post.audio ? `<audio controls src="${post.audio}" class="w-full h-9 mb-3"></audio>` : ''}
+        window.renderPosts = function() {
+            const cloudPosts = window.currentCloudPosts || [];
+            const localPosts = getLocalPosts();
 
-                ${!post.isDad ? `
-                <div class="flex items-center gap-3 border-t border-pink-100 pt-3">
-                    <button onclick="likePost(${pid})" class="flex items-center gap-1.5 bg-pink-50 ${iLiked ? 'text-pink-600' : 'text-gray-500'} font-bold text-xs px-3 py-1.5 rounded-xl border border-pink-100 hover:bg-pink-100 transition">
-                        ${iLiked ? '❤️' : '🤍'} <span>${(post.likesList && post.likesList.length) ? post.likesList.length : (post.likes || 0)}</span>
-                    </button>
-                    <button onclick="showLikesList(${pid})" class="text-[11px] text-pink-500 font-bold hover:underline">المعجبين 👀</button>
-                    <span class="text-xs text-gray-400 font-bold mr-auto">${comments.length} تعليق</span>
-                </div>
+            let postMap = new Map();
 
-                <div class="mt-3 space-y-2">
-                    <div class="flex gap-1.5">
-                        <input type="text" id="cName-${pid}" value="${esc(localStorage.getItem(STORAGE_KEYS.friendName) || '')}" placeholder="الاسم 🌸" class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
-                        <input type="password" id="cPin-${pid}" value="${esc(localStorage.getItem(STORAGE_KEYS.friendPin) || '')}" placeholder="الكود 🔒" class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
-                        <input type="text" id="cText-${pid}" placeholder="تعليقك..." class="w-1/3 text-[11px] p-2 border border-pink-200 rounded-xl outline-none focus:ring-1 focus:ring-pink-400 bg-pink-50/30">
-                    </div>
-                    <div class="flex gap-1.5">
-                        <button type="button" onclick="document.getElementById('cImgInput-${pid}').click()" class="text-[11px] bg-pink-50 border border-dashed border-pink-300 text-pink-600 font-bold px-3 py-1.5 rounded-xl hover:bg-pink-100 transition">📷 صورة</button>
-                        <input type="file" id="cImgInput-${pid}" accept="image/*" class="hidden" onchange="handleCommentImage(event, ${pid})">
-                        <button onclick="addComment(${pid})" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-[11px] py-1.5 rounded-xl hover:opacity-90 transition">نشر التعليق ✨</button>
-                    </div>
-                    <div class="relative inline-block self-start">
-                        <img id="cPreview-${pid}" class="hidden w-16 h-16 object-cover rounded-xl border border-pink-300 shadow-sm mt-1">
-                    </div>
-                    ${commentsHtml}
-                </div>
-                ` : ''}
-            </div>
-        </div>`;
-    }
+            cloudPosts.forEach(post => {
+                if (post && post.id) postMap.set(String(post.id), post);
+            });
 
-    window.renderPosts = function() {
-        const cloudPosts = window.currentCloudPosts || [];
-        const localPosts = getLocalPosts();
+            if (isAdminLoggedIn && !isViewerMode) {
+                localPosts.forEach(post => {
+                    if (post && post.id && !postMap.has(String(post.id))) {
+                        postMap.set(String(post.id), post);
+                    }
+                });
+            }
 
-        let postMap = new Map();
+            let allPosts = Array.from(postMap.values());
+            allPosts.sort((a, b) => Number(b.id) - Number(a.id));
+            window.currentDisplayedPosts = allPosts;
 
-        cloudPosts.forEach(post => {
-            if (post && post.id) postMap.set(String(post.id), post);
+            const dadSurprisePost = {
+                id: 'dad-msg',
+                date: 'رسالة خاصة من بابا 🌸',
+                image: 'dad-randa.jpg',
+                ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة الدنيا يا روح أبوكِ ✨',
+                isDad: true
+            };
+
+            const finalPostsFeed = [dadSurprisePost, ...allPosts];
+            dom.postsFeed.innerHTML = finalPostsFeed.map(renderPostCard).join('');
+        };
+
+        window.backupData = async function() {
+            if (!isAdminLoggedIn) return;
+            try {
+                const backup = {
+                    exportedAt: new Date().toISOString(),
+                    localPosts: getLocalPosts(),
+                    friendsPins: getLocalFriends(),
+                    adminHash: localStorage.getItem(STORAGE_KEYS.adminHash) || AUTH_HASH
+                };
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `randa_backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                alert('تم حفظ النسخة الاحتياطية بنجاح! 📦');
+            } catch(e) {
+                alert('حدث خطأ أثناء النسخ الاحتياطي! ❌');
+                console.error(e);
+            }
+        };
+
+        window.restoreData = async function(event) {
+            if (!isAdminLoggedIn) return;
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (backup.localPosts) saveLocalPosts(backup.localPosts);
+                    if (Array.isArray(backup.friendsPins)) {
+                        for (const f of backup.friendsPins) {
+                            await saveFriendPin(f.name, f.pin);
+                        }
+                    }
+                    renderPosts();
+                    alert('تمت استعادة البيانات بنجاح! 📥');
+                } catch(err) {
+                    alert('ملف النسخة الاحتياطية غير صالح! ❌');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        };
+
+        window.copyFriendLink = function() {
+            const link = `${window.location.origin}${window.location.pathname}?mode=view`;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('🔗 تم نسخ رابط المشاركة العام بنجاح!\nيمكنك مشاركة الرابط لمشاهدة الألبوم دون صلاحيات الأدمن.');
+            }).catch(() => {
+                prompt('انسخ الرابط يدوياً:', link);
+            });
+        };
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 1000);
+                }
+            }, 2500);
         });
 
-        if (isAdminLoggedIn && !isViewerMode) {
-            localPosts.forEach(post => {
-                if (post && post.id && !postMap.has(String(post.id))) {
-                    postMap.set(String(post.id), post);
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
                 }
             });
         }
 
-        let allPosts = Array.from(postMap.values());
-        allPosts.sort((a, b) => Number(b.id) - Number(a.id));
-        window.currentDisplayedPosts = allPosts;
-
-        const dadSurprisePost = {
-            id: 'dad-msg',
-            date: 'رسالة خاصة من بابا 🌸',
-            image: 'dad-randa.jpg',
-            ar: 'ملاكي الصغير رندة.. مهما كبرتي يا بابا، ستظلين تلك الفتاة الصغيرة التي لا تنام إلا حين أغني لها شيئاً رقيقاً كروحها المرحة الجميلة. منورة الدنيا يا روح أبوكِ ✨',
-            isDad: true
-        };
-
-        const finalPostsFeed = [dadSurprisePost, ...allPosts];
-        dom.postsFeed.innerHTML = finalPostsFeed.map(renderPostCard).join('');
-    };
-
-    window.backupData = async function() {
-        if (!isAdminLoggedIn) return;
-        try {
-            const backup = {
-                exportedAt: new Date().toISOString(),
-                localPosts: getLocalPosts(),
-                friendsPins: getLocalFriends(),
-                adminHash: localStorage.getItem(STORAGE_KEYS.adminHash) || AUTH_HASH
-            };
-            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `randa_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(a.href);
-            alert('تم حفظ النسخة الاحتياطية بنجاح! 📦');
-        } catch(e) {
-            alert('حدث خطأ أثناء النسخ الاحتياطي! ❌');
-            console.error(e);
-        }
-    };
-
-    window.restoreData = async function(event) {
-        if (!isAdminLoggedIn) return;
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const backup = JSON.parse(e.target.result);
-                if (backup.localPosts) saveLocalPosts(backup.localPosts);
-                if (Array.isArray(backup.friendsPins)) {
-                    for (const f of backup.friendsPins) {
-                        await saveFriendPin(f.name, f.pin);
-                    }
-                }
-                renderPosts();
-                alert('تمت استعادة البيانات بنجاح! 📥');
-            } catch(err) {
-                alert('ملف النسخة الاحتياطية غير صالح! ❌');
-                console.error(err);
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    };
-
-    window.copyFriendLink = function() {
-        const link = `${window.location.origin}${window.location.pathname}?mode=view`;
-        navigator.clipboard.writeText(link).then(() => {
-            alert('🔗 تم نسخ رابط المشاركة العام بنجاح!\nيمكنك مشاركة الرابط لمشاهدة الألبوم دون صلاحيات الأدمن.');
-        }).catch(() => {
-            prompt('انسخ الرابط يدوياً:', link);
+        window.addEventListener('scroll', () => {
+            dom.scrollTopBtn.classList.toggle('hidden', window.scrollY < 400);
         });
-    };
 
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const splash = document.getElementById('splashScreen');
-            if (splash) {
-                splash.style.opacity = '0';
-                setTimeout(() => splash.remove(), 1000);
+        function initApp() {
+            if (new URLSearchParams(window.location.search).get('mode') === 'view') {
+                isViewerMode = true;
+                document.getElementById('viewerNotice').classList.remove('hidden');
             }
-        }, 2500);
-    });
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for (let registration of registrations) {
-                registration.unregister();
+            if (sessionStorage.getItem('randa_admin_auth') === 'true') {
+                isAdminLoggedIn = true;
             }
-        });
-    }
 
-    window.addEventListener('scroll', () => {
-        dom.scrollTopBtn.classList.toggle('hidden', window.scrollY < 400);
-    });
+            const savedName = localStorage.getItem(STORAGE_KEYS.friendName);
+            const savedPin = localStorage.getItem(STORAGE_KEYS.friendPin);
+            if (savedName) document.getElementById('vPostName').value = savedName;
+            if (savedPin) document.getElementById('vPostPin').value = savedPin;
 
-    function initApp() {
-        if (new URLSearchParams(window.location.search).get('mode') === 'view') {
-            isViewerMode = true;
-            document.getElementById('viewerNotice').classList.remove('hidden');
-        }
+            updateAdminUI();
+            renderPosts();
 
-        if (sessionStorage.getItem('randa_admin_auth') === 'true') {
-            isAdminLoggedIn = true;
-        }
-
-        const savedName = localStorage.getItem(STORAGE_KEYS.friendName);
-        const savedPin = localStorage.getItem(STORAGE_KEYS.friendPin);
-        if (savedName) document.getElementById('vPostName').value = savedName;
-        if (savedPin) document.getElementById('vPostPin').value = savedPin;
-
-        updateAdminUI();
-        renderPosts();
-
-        if (window.db) {
-            window.onSnapshot(window.collection(window.db, "friends_pins"), (snap) => {
+            onSnapshot(collection(db, "friends_pins"), (snap) => {
                 friendsPinsMap = {};
                 snap.forEach(d => {
                     const data = d.data();
@@ -1221,7 +1192,7 @@
                 renderPosts();
             });
 
-            window.onSnapshot(window.doc(window.db, "admin_config", "auth"), (docSnap) => {
+            onSnapshot(doc(db, "admin_config", "auth"), (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.hash) {
@@ -1243,8 +1214,8 @@
                 }
             });
 
-            window.onSnapshot(
-                window.collection(window.db, "public_posts"),
+            onSnapshot(
+                collection(db, "public_posts"),
                 (snap) => {
                     const posts = [];
                     snap.forEach(d => {
@@ -1257,9 +1228,8 @@
                 (err) => console.error("Snapshot error:", err)
             );
         }
-    }
 
-    initApp();
+        initApp();
     </script>
 </body>
 </html>
