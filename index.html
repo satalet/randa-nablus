@@ -1011,7 +1011,6 @@
         const myName = localStorage.getItem(STORAGE_KEYS.friendName) || '';
         const iLiked = (post.likesList || []).some(l => normalizeText(l.name) === normalizeText(myName));
         
-        // ترتيب التعليقات من الأحدث إلى الأقدم
         const comments = (post.comments && Array.isArray(post.comments)) ? [...post.comments].reverse() : [];
 
         const adminControls = (!post.isDad && isAdmin) ? `
@@ -1080,17 +1079,26 @@
     }
 
     window.renderPosts = function() {
-        const localPosts = getLocalPosts();
         const cloudPosts = window.currentCloudPosts || [];
+        const localPosts = getLocalPosts();
 
-        let allPosts = [...cloudPosts];
-        localPosts.forEach(lp => {
-            if (!allPosts.find(cp => String(cp.id) === String(lp.id))) {
-                if (!isViewerMode || lp.isPublic) allPosts.push(lp);
-            }
+        let postMap = new Map();
+
+        cloudPosts.forEach(post => {
+            if (post && post.id) postMap.set(String(post.id), post);
         });
 
-        allPosts.sort((a, b) => b.id - a.id);
+        if (isAdminLoggedIn && !isViewerMode) {
+            localPosts.forEach(post => {
+                if (post && post.id && !postMap.has(String(post.id))) {
+                    postMap.set(String(post.id), post);
+                }
+            });
+        }
+
+        let allPosts = Array.from(postMap.values());
+        allPosts.sort((a, b) => Number(b.id) - Number(a.id));
+        window.currentDisplayedPosts = allPosts;
 
         const dadSurprisePost = {
             id: 'dad-msg',
@@ -1101,8 +1109,6 @@
         };
 
         const finalPostsFeed = [dadSurprisePost, ...allPosts];
-        window.currentDisplayedPosts = allPosts;
-
         dom.postsFeed.innerHTML = finalPostsFeed.map(renderPostCard).join('');
     };
 
@@ -1203,7 +1209,6 @@
         renderPosts();
 
         if (window.db) {
-            // مزامنة حية للأكواد الموثوقة لحظياً
             window.onSnapshot(window.collection(window.db, "friends_pins"), (snap) => {
                 friendsPinsMap = {};
                 snap.forEach(d => {
@@ -1216,7 +1221,6 @@
                 renderPosts();
             });
 
-            // مراقبة صلاحيات الأدمن وطرد الأجهزة الأخرى عند تغيير كلمة المرور
             window.onSnapshot(window.doc(window.db, "admin_config", "auth"), (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -1239,12 +1243,14 @@
                 }
             });
 
-            // الاستماع المباشر للمنشورات العامة
             window.onSnapshot(
                 window.collection(window.db, "public_posts"),
                 (snap) => {
                     const posts = [];
-                    snap.forEach(d => posts.push(d.data()));
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (data) posts.push(data);
+                    });
                     window.currentCloudPosts = posts;
                     renderPosts();
                 },
