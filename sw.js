@@ -43,3 +43,18 @@ self.addEventListener('fetch', (event) => {
             .catch(() => caches.match(event.request))
     );
 });
+
+// استقبال طلبات إشعارات النظام المباشرة
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const { title, body, icon } = event.data;
+        self.registration.showNotification(title, {
+            body: body,
+            icon: icon || './icon-192.png',
+            badge: './icon-192.png',
+            vibrate: [200, 100, 200],
+            tag: 'randa-update-' + Date.now(),
+            renotify: true
+        });
+    }
+});

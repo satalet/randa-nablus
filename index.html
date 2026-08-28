@@ -31,24 +31,12 @@
         #imageModal:not(.hidden) #modalImg { animation: zoomIn 0.3s ease; }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        #inAppNotification { transition: transform 0.4s ease, opacity 0.4s ease; }
-
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--pink-soft); }
         ::-webkit-scrollbar-thumb { background: var(--pink-primary); border-radius: 10px; }
     </style>
 </head>
 <body class="pb-20 select-none">
-
-    <!-- لافتة الإشعار المتحركة الملفتة داخل التطبيق -->
-    <div id="inAppNotification" class="fixed top-4 left-4 right-4 z-50 bg-gradient-to-r from-pink-600 to-purple-600 text-white p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 transform -translate-y-32 opacity-0 border border-white/30 backdrop-blur-md">
-        <span class="text-2xl animate-bounce">🔔</span>
-        <div class="flex-1 text-right">
-            <h4 id="notifTitle" class="text-xs font-bold text-pink-100">يوميات رندة والبنات 🌸</h4>
-            <p id="notifMsg" class="text-xs font-bold text-white leading-tight mt-0.5">تمت إضافة منشور جديد في الألبوم!</p>
-        </div>
-        <button onclick="dismissInAppNotification()" class="text-white text-xs bg-white/20 hover:bg-white/40 px-2 py-1 rounded-lg">إغلاق</button>
-    </div>
 
     <!-- نافذة تكبير الصور -->
     <div id="imageModal" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2" onclick="closeImageModal()">
@@ -93,7 +81,7 @@
 
     <main class="p-4 max-w-md mx-auto mt-2">
 
-        <!-- صندوق نشر خاص بالحسابات الموثوقة (يظهر بالأعلى في وضع الفيو) -->
+        <!-- صندوق نشر خاص بالحسابات الموثوقة -->
         <div id="verifiedUserPostBoxTop" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h3 class="text-sm font-bold text-pink-600 mb-2 flex items-center gap-1.5">
                 <span>✨ نشر صورة جديدة (خاص بالحسابات الموثوقة)</span>
@@ -148,7 +136,6 @@
                 <textarea id="arText" rows="3" class="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-300 outline-none resize-none text-gray-700 bg-gray-50 text-sm" placeholder="اكتبي تفاصيل اليومية هنا 🌸..."></textarea>
             </div>
 
-            <!-- قسم تسجيل الفويس الصوتي -->
             <div class="mb-4 bg-pink-50 p-4 rounded-2xl border border-pink-200">
                 <label class="block text-xs font-bold text-pink-700 mb-2">🎙️ تسجيل فويس صوتي يعبر عن الصورة:</label>
 
@@ -319,14 +306,11 @@
             scrollTopBtn:   document.getElementById('scrollTopBtn'),
             friendsList:    document.getElementById('friendsListContainer'),
             vBoxTop:        document.getElementById('verifiedUserPostBoxTop'),
-            vBoxBottom:     document.getElementById('verifiedUserPostBoxBottom'),
-            notifBox:       document.getElementById('inAppNotification'),
-            notifTitle:     document.getElementById('notifTitle'),
-            notifMsg:       document.getElementById('notifMsg')
+            vBoxBottom:     document.getElementById('verifiedUserPostBoxBottom')
         };
 
         /* ═══════════════════════════════════════════════
-           1️⃣ إدارة زر الرجوع الصارم بالهاتف (Hardware Back Trap)
+           1️⃣ إدارة زر الرجوع الصارم بالهاتف
         ═══════════════════════════════════════════════ */
         function primeHistoryTrap() {
             history.pushState({ app: 'randa_core' }, '');
@@ -340,22 +324,19 @@
             }
         }, { once: true });
 
-        window.addEventListener('popstate', (e) => {
-            // 1. أولاً: إغلاق الصورة إن كانت مفتوحة
+        window.addEventListener('popstate', () => {
             if (isModalOpen) {
                 closeImageModal();
                 primeHistoryTrap();
                 return;
             }
 
-            // 2. ثانياً: الصعود لأول الصفحة إن كان يتصفح بالأسفل
             if (window.scrollY > 150) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 primeHistoryTrap();
                 return;
             }
 
-            // 3. ثالثاً: تأكيد صريح للخروج بعد نفاذ النوافذ والتمرير
             if (confirm('🌸 هل ترغب حقاً في الخروج من تطبيق يوميات رندة؟')) {
                 history.go(-2);
             } else {
@@ -364,42 +345,39 @@
         });
 
         /* ═══════════════════════════════════════════════
-           2️⃣ نظام الإشعارات (Push & Live In-App Notifications)
+           2️⃣ نظام إشعارات النظام المباشرة (System Push)
         ═══════════════════════════════════════════════ */
         window.requestNotificationPermission = async function() {
             if (!("Notification" in window)) {
-                alert("متصفحك لا يدعم استقبال إشعارات النظام.");
+                alert("متصفحك لا يدعم إشعارات النظام المباشرة.");
                 return;
             }
             const perm = await Notification.requestPermission();
             if (perm === "granted") {
-                showInAppNotification("تم تفعيل الإشعارات بنجاح! 🌸🔔", "ستصلك إشعارات فورية بكل يومية وصورة جديدة.");
+                triggerSystemNotification("يوميات رندة والبنات 🌸🔔", "تم تفعيل إشعارات النظام بنجاح! ستصلك إشعارات فورية بكل جديد.");
                 document.getElementById('notifBtn').classList.add('hidden');
             } else {
                 alert("تم رفض إذن الإشعارات، يمكنك تفعيله لاحقاً من إعدادات المتصفح.");
             }
         };
 
-        function showInAppNotification(title, msg) {
-            dom.notifTitle.textContent = title;
-            dom.notifMsg.textContent = msg;
-            dom.notifBox.classList.remove('-translate-y-32', 'opacity-0');
-            dom.notifBox.classList.add('translate-y-0', 'opacity-100');
-
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-            setTimeout(() => {
-                dismissInAppNotification();
-            }, 6000);
+        function triggerSystemNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SHOW_NOTIFICATION',
+                        title: title,
+                        body: body,
+                        icon: './icon-192.png'
+                    });
+                } else {
+                    new Notification(title, { body: body, icon: './icon-192.png' });
+                }
+            }
         }
 
-        window.dismissInAppNotification = function() {
-            dom.notifBox.classList.add('-translate-y-32', 'opacity-0');
-            dom.notifBox.classList.remove('translate-y-0', 'opacity-100');
-        };
-
         /* ═══════════════════════════════════════════════
-           3️⃣ الدوال المساعدة ومعالجة المفاتيح والصور
+           3️⃣ الدوال المساعدة ومعالجة المفاتيح
         ═══════════════════════════════════════════════ */
         function bufferToBase64(buffer) {
             return btoa(String.fromCharCode(...new Uint8Array(buffer)));
@@ -659,16 +637,13 @@
                 const getOptions = {
                     challenge: challenge,
                     userVerification: "required",
-                    timeout: 60000
-                };
-
-                if (savedCredId) {
-                    getOptions.allowCredentials = [{
+                    timeout: 60000,
+                    allowCredentials: [{
                         id: base64ToBuffer(savedCredId),
                         type: 'public-key',
                         transports: ['internal']
-                    }];
-                }
+                    }]
+                };
 
                 const assertion = await navigator.credentials.get({ publicKey: getOptions });
 
@@ -928,6 +903,7 @@
 
             const newPost = {
                 id: Date.now(),
+                authorName: nameVal,
                 date: `${new Date().toLocaleString('ar-PS')} (بواسطة ${nameVal} ✨)`,
                 image: verifiedPostImageBase64,
                 ar: textVal,
@@ -1012,6 +988,7 @@
             } else {
                 updatedPost = {
                     id: Date.now(),
+                    authorName: 'رندة (الأدمن)',
                     date: new Date().toLocaleString('ar-PS'),
                     image: currentImageBase64,
                     ar: dom.arText.value,
@@ -1032,8 +1009,40 @@
 
         dom.cancelEditBtn.addEventListener('click', resetPostForm);
 
-        window.deletePost = async function(id) {
-            if (!isAdminLoggedIn) return;
+        // التحقق من كود صاحب الحساب الموثوق قبل التعديل أو الحذف
+        async function verifyAuthorAccess(authorName) {
+            if (isAdminLoggedIn) return true;
+            if (!authorName) return false;
+
+            const nameKey = normalizeText(authorName);
+            const docId = getSafeDocId(authorName);
+
+            try {
+                const snap = await getDoc(doc(db, "friends_pins", docId));
+                if (snap.exists()) friendsPinsMap[nameKey] = snap.data();
+            } catch(e) {}
+
+            const registeredFriend = friendsPinsMap[nameKey];
+            if (!registeredFriend) {
+                alert('عذراً! الحساب غير مسجل أو لا يملك صلاحية.');
+                return false;
+            }
+
+            const inputPin = prompt(`🔒 أدخل الكود السري الخاص بـ (${authorName}) للتأكيد:`);
+            if (!inputPin) return false;
+
+            if (String(inputPin).trim() === String(registeredFriend.pin).trim()) {
+                return true;
+            } else {
+                alert('❌ الكود السري غير صحيح! لا يمكنك تعديل أو حذف محتوى لا يخصك.');
+                return false;
+            }
+        }
+
+        window.deletePost = async function(id, authorName) {
+            const hasAccess = await verifyAuthorAccess(authorName);
+            if (!hasAccess) return;
+
             if (confirm('هل أنت متأكد من حذف هذه اليومية؟')) {
                 let posts = getLocalPosts().filter(p => p.id !== id);
                 saveLocalPosts(posts);
@@ -1042,19 +1051,57 @@
             }
         };
 
+        window.editVerifiedUserPost = async function(id, authorName) {
+            const hasAccess = await verifyAuthorAccess(authorName);
+            if (!hasAccess) return;
+
+            const post = (window.currentDisplayedPosts || []).find(p => p.id === id);
+            if (!post) return;
+
+            const newText = prompt('تعديل وصف اليومية:', post.ar || '');
+            if (newText === null) return;
+
+            const updatedPost = { ...post, ar: newText.trim() };
+            try {
+                await setDoc(doc(db, "public_posts", String(id)), updatedPost, { merge: true });
+                alert('تم تحديث اليومية بنجاح! 🌸');
+            } catch(e) {
+                alert('حدث خطأ أثناء التعديل!');
+            }
+        };
+
+        // تبديل الخصوصية (عام/خاص) والتفاعل السحابي الفوري
         window.togglePrivacy = async function(id) {
             if (!isAdminLoggedIn) return;
-            let posts = getLocalPosts();
-            let changedPost = null;
-            posts = posts.map(p => {
-                if (p.id === id) {
-                    changedPost = { ...p, isPublic: !p.isPublic };
-                    return changedPost;
+            const allPosts = window.currentDisplayedPosts || [];
+            const post = allPosts.find(p => p.id === id);
+            if (!post) return;
+
+            const newPrivacy = !post.isPublic;
+            post.isPublic = newPrivacy;
+
+            let localPosts = getLocalPosts();
+            const existingLocalIndex = localPosts.findIndex(p => p.id === id);
+
+            if (newPrivacy) {
+                // أصبح عام -> رفعه إلى Firebase
+                await setDoc(doc(db, "public_posts", String(id)), post, { merge: true });
+                if (existingLocalIndex !== -1) {
+                    localPosts[existingLocalIndex].isPublic = true;
+                } else {
+                    localPosts.unshift(post);
                 }
-                return p;
-            });
-            saveLocalPosts(posts);
-            if (changedPost) await syncToCloud(changedPost);
+            } else {
+                // أصبح خاص -> حذفه من Firebase وحفظه محلياً للأدمن
+                await deleteDoc(doc(db, "public_posts", String(id)));
+                if (existingLocalIndex !== -1) {
+                    localPosts[existingLocalIndex].isPublic = false;
+                } else {
+                    localPosts.unshift(post);
+                }
+            }
+
+            saveLocalPosts(localPosts);
             renderPosts();
         };
 
@@ -1211,8 +1258,10 @@
             } catch(e) { console.error("Comment error:", e); }
         };
 
-        window.deleteComment = async function(postId, commentId) {
-            if (!isAdminLoggedIn) return;
+        window.deleteComment = async function(postId, commentId, authorName) {
+            const hasAccess = await verifyAuthorAccess(authorName);
+            if (!hasAccess) return;
+
             if (!confirm('هل أنت متأكد من حذف هذا التعليق؟ 🌸')) return;
 
             const posts = window.currentDisplayedPosts || [];
@@ -1226,6 +1275,32 @@
             } catch(e) { console.error("Delete comment error:", e); }
         };
 
+        window.editComment = async function(postId, commentId, authorName) {
+            const hasAccess = await verifyAuthorAccess(authorName);
+            if (!hasAccess) return;
+
+            const posts = window.currentDisplayedPosts || [];
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (!post || !post.comments) return;
+
+            const comment = post.comments.find(c => c.id === commentId);
+            if (!comment) return;
+
+            const newText = prompt('تعديل نص التعليق:', comment.text || '');
+            if (newText === null) return;
+
+            const updatedComments = post.comments.map(c => {
+                if (c.id === commentId) {
+                    return { ...c, text: newText.trim() };
+                }
+                return c;
+            });
+
+            try {
+                await setDoc(doc(db, "public_posts", String(postId)), { comments: updatedComments }, { merge: true });
+            } catch(e) { console.error("Edit comment error:", e); }
+        };
+
         function renderPostCard(post) {
             const pid = post.id;
             const isAdmin = isAdminLoggedIn && !isViewerMode;
@@ -1233,15 +1308,45 @@
             const iLiked = (post.likesList || []).some(l => normalizeText(l.name) === normalizeText(myName));
             const comments = (post.comments && Array.isArray(post.comments)) ? [...post.comments].reverse() : [];
 
-            const adminControls = (!post.isDad && isAdmin) ? `
-                <div class="flex gap-1">
-                    <button onclick="togglePrivacy(${pid})" class="text-[10px] bg-purple-50 text-purple-600 font-bold px-2 py-1 rounded-lg border border-purple-200">${post.isPublic ? '🌐 عام' : '🔒 خاص'}</button>
-                    <button onclick="editPost(${pid})" class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-200">✏️ تعديل</button>
-                    <button onclick="deletePost(${pid})" class="text-[10px] bg-red-50 text-red-500 font-bold px-2 py-1 rounded-lg border border-red-200">🗑️</button>
-                </div>` : '';
+            const isAuthor = !isAdmin && post.authorName && (normalizeText(post.authorName) === normalizeText(myName));
+
+            let postControlBtns = '';
+            if (isAdmin && !post.isDad) {
+                postControlBtns = `
+                    <div class="flex gap-1">
+                        <button onclick="togglePrivacy(${pid})" class="text-[10px] ${post.isPublic ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-gray-100 text-gray-700 border-gray-300'} font-bold px-2 py-1 rounded-lg border">
+                            ${post.isPublic ? '🌐 عام' : '🔒 خاص'}
+                        </button>
+                        <button onclick="editPost(${pid})" class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-200">✏️ تعديل</button>
+                        <button onclick="deletePost(${pid}, '${jsEsc(post.authorName || '')}')" class="text-[10px] bg-red-50 text-red-500 font-bold px-2 py-1 rounded-lg border border-red-200">🗑️</button>
+                    </div>`;
+            } else if (isAuthor && !post.isDad) {
+                postControlBtns = `
+                    <div class="flex gap-1">
+                        <button onclick="editVerifiedUserPost(${pid}, '${jsEsc(post.authorName)}')" class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-lg border border-blue-200">✏️ تعديلي</button>
+                        <button onclick="deletePost(${pid}, '${jsEsc(post.authorName)}')" class="text-[10px] bg-red-50 text-red-500 font-bold px-2 py-1 rounded-lg border border-red-200">🗑️ حذفي</button>
+                    </div>`;
+            }
 
             const commentsHtml = comments.map(c => {
                 const verified = isCommentVerified(c);
+                const isCommentAuthor = !isAdmin && (normalizeText(c.name) === normalizeText(myName));
+
+                let commentActions = '';
+                if (isAdmin) {
+                    commentActions = `
+                        <div class="flex gap-1 items-center">
+                            <button onclick="editComment(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-blue-500 text-[10px] font-bold">✏️</button>
+                            <button onclick="deleteComment(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-red-400 text-[10px] font-bold">🗑️</button>
+                        </div>`;
+                } else if (isCommentAuthor) {
+                    commentActions = `
+                        <div class="flex gap-1 items-center">
+                            <button onclick="editComment(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-blue-500 text-[10px] font-bold">✏️</button>
+                            <button onclick="deleteComment(${pid}, ${c.id}, '${jsEsc(c.name)}')" class="text-red-400 text-[10px] font-bold">🗑️</button>
+                        </div>`;
+                }
+
                 return `
                 <div class="bg-pink-50/50 rounded-2xl p-2.5 border border-pink-100">
                     <div class="flex justify-between items-center mb-1">
@@ -1249,7 +1354,7 @@
                             ${verified ? '✨' : '👤'} ${esc(c.name)}
                             <span class="text-gray-400 font-normal mr-1">${c.date || ''}</span>
                         </span>
-                        ${isAdmin ? `<button onclick="deleteComment(${pid}, ${c.id})" class="text-red-400 text-[10px] font-bold">🗑️</button>` : ''}
+                        ${commentActions}
                     </div>
                     ${c.text ? `<p class="text-xs text-gray-700 leading-relaxed">${esc(c.text)}</p>` : ''}
                     ${c.image ? `<img src="${c.image}" class="w-full max-h-48 object-cover rounded-xl mt-1.5 cursor-pointer" onclick="openImageModal(this.src)">` : ''}
@@ -1263,7 +1368,7 @@
                 <div class="p-4">
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <span class="text-[11px] text-gray-400 font-bold">${esc(post.date || '')}</span>
-                        ${adminControls}
+                        ${postControlBtns}
                     </div>
                     ${post.ar ? `<p class="text-sm text-gray-700 leading-relaxed mb-3 whitespace-pre-line">${esc(post.ar)}</p>` : ''}
                     ${post.audio ? `<audio controls src="${post.audio}" class="w-full h-9 mb-3"></audio>` : ''}
@@ -1471,7 +1576,7 @@
                     });
                     
                     if (!isInitialPostsLoad && posts.length > (window.currentCloudPosts?.length || 0)) {
-                        showInAppNotification("يومية جديدة في الألبوم! 🌸📸", "أضافت رندة أو إحدى الصديقات صورة ويومية جديدة للتو.");
+                        triggerSystemNotification("يوميات رندة والبنات 🌸📸", "تمت إضافة صورة ويومية جديدة في الألبوم!");
                     }
                     isInitialPostsLoad = false;
 
