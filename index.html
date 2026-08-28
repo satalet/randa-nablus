@@ -78,7 +78,7 @@
 
     <main class="p-4 max-w-md mx-auto mt-2">
 
-        <!-- صندوق نشر خاص بالحسابات الموثوقة (يظهر بالأعلى في وضع الفيو فقط) -->
+        <!-- صندوق نشر خاص بالحسابات الموثوقة (يظهر بالأعلى في وضع الفيو) -->
         <div id="verifiedUserPostBoxTop" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h3 class="text-sm font-bold text-pink-600 mb-2 flex items-center gap-1.5">
                 <span>✨ نشر صورة جديدة (خاص بالحسابات الموثوقة)</span>
@@ -200,8 +200,8 @@
             <button onclick="changeAdminPassword()" class="col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 px-3 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
                 <span>🔐 تغيير كلمة سر الأدمن</span>
             </button>
-            <button onclick="enableBiometricAuth()" class="col-span-2 bg-pink-50 text-pink-700 font-bold py-2.5 px-3 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
-                <span>👆 تفعيل الدخول بالبصمة لهذا الهاتف</span>
+            <button onclick="enableBiometricAuth(true)" class="col-span-2 bg-pink-50 text-pink-700 font-bold py-2.5 px-3 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
+                <span>👆 إعادة تسجيل/تفعيل البصمة لهذا الهاتف</span>
             </button>
             <button onclick="backupData()" class="bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
@@ -310,22 +310,32 @@
         ═══════════════════════════════════════════════ */
         history.pushState({ page: 'home' }, '');
 
+        let hasScrolledState = false;
+        window.addEventListener('scroll', () => {
+            dom.scrollTopBtn.classList.toggle('hidden', window.scrollY < 400);
+
+            if (window.scrollY > 300 && !hasScrolledState && !isModalOpen) {
+                history.pushState({ scrolled: true }, '');
+                hasScrolledState = true;
+            } else if (window.scrollY <= 100 && hasScrolledState) {
+                hasScrolledState = false;
+            }
+        });
+
         window.addEventListener('popstate', (e) => {
-            // 1. إغلاق الصورة أولاً إن كانت مفتوحة
             if (isModalOpen) {
-                closeImageModal(false);
+                closeImageModal();
                 history.pushState({ page: 'home' }, '');
                 return;
             }
 
-            // 2. إذا كان المستخدم نازلاً بالصفحة، يصعد لأول الصفحة
-            if (window.scrollY > 250) {
+            if (window.scrollY > 150) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                hasScrolledState = false;
                 history.pushState({ page: 'home' }, '');
                 return;
             }
 
-            // 3. إذا كان في أعلى الصفحة والصور مغلقة -> تأكيد الخروج
             if (confirm('هل ترغب في الخروج من تطبيق يوميات رندة؟ 🌸')) {
                 history.back();
             } else {
@@ -443,7 +453,7 @@
             history.pushState({ modal: true }, '');
         };
 
-        window.closeImageModal = function(popHistory = true) {
+        window.closeImageModal = function() {
             document.getElementById('imageModal').classList.add('hidden');
             document.getElementById('modalImg').src = '';
             isModalOpen = false;
@@ -517,7 +527,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           4️⃣ إدارة الدخول والأدمن والبصمة البيومترية
+           4️⃣ إدارة الدخول ونظام البصمة التلقائي
         ═══════════════════════════════════════════════ */
         function verifyPassword(inputPass) {
             if (!inputPass) return false;
@@ -526,10 +536,10 @@
             return hashedInput === currentHash || btoa(inputPass) === currentHash;
         }
 
-        // تفعيل البصمة
-        window.enableBiometricAuth = async function() {
+        // دالة تفعيل البصمة البيومترية
+        window.enableBiometricAuth = async function(isManual = false) {
             if (!window.PublicKeyCredential) {
-                alert('عذراً! متصفحك أو هاتفك لا يدعم الدخول بالبصمة البيومترية.');
+                if (isManual) alert('عذراً! متصفحك أو هاتفك لا يدعم الدخول بالبصمة البيومترية.');
                 return;
             }
 
@@ -541,9 +551,9 @@
                 const credential = await navigator.credentials.create({
                     publicKey: {
                         challenge: challenge,
-                        rp: { name: "Randa Diaries Admin" },
+                        rp: { name: "Randa Diaries", id: window.location.hostname },
                         user: {
-                            id: Uint8Array.from("randa_admin_user", c => c.charCodeAt(0)),
+                            id: Uint8Array.from("randa_admin", c => c.charCodeAt(0)),
                             name: "randa_admin",
                             displayName: "Randa Admin"
                         },
@@ -556,15 +566,15 @@
                 if (credential) {
                     localStorage.setItem(STORAGE_KEYS.bioKey, currentHash);
                     dom.bioAuthBtn.classList.remove('hidden');
-                    alert('تم تفعيل البصمة بنجاح! 🌸👆 يمكنك الآن الدخول بلمسة واحدة في المرات القادمة.');
+                    alert('تم تفعيل البصمة بنجاح! 🌸👆 يمكنك الآن الدخول بلمسة واحدة.');
                 }
             } catch(e) {
-                alert('تم إلغاء أو تعذر تسجيل البصمة.');
-                console.error(e);
+                if (isManual) alert('تم إلغاء تفعيل البصمة.');
+                console.error("Biometric setup error:", e);
             }
         };
 
-        // الدخول بالبصمة
+        // دالة تسجيل الدخول بالبصمة
         window.handleBiometricLogin = async function() {
             const savedBio = localStorage.getItem(STORAGE_KEYS.bioKey);
             const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
@@ -581,6 +591,7 @@
                 const assertion = await navigator.credentials.get({
                     publicKey: {
                         challenge: challenge,
+                        rpId: window.location.hostname,
                         userVerification: "required",
                         timeout: 60000
                     }
@@ -601,7 +612,7 @@
             }
         };
 
-        window.handleAuthToggle = function() {
+        window.handleAuthToggle = async function() {
             if (isAdminLoggedIn) {
                 if (confirm('هل ترغب بتسجيل الخروج من لوحة الأدمن؟')) {
                     sessionStorage.removeItem('randa_admin_auth');
@@ -622,6 +633,15 @@
                         updateAdminUI();
                         renderPosts();
                         alert('أهلاً بك! تم تفعيل لوحة التحكم بنجاح 🌸✨');
+
+                        // اقتراح تفعيل البصمة تلقائياً إذا لم تكن مفعلة
+                        if (window.PublicKeyCredential && !localStorage.getItem(STORAGE_KEYS.bioKey)) {
+                            setTimeout(() => {
+                                if (confirm('👆 هل ترغب في تفعيل بصمة الإصبع لهذا الهاتف للدخول السريع مستقبلاً؟')) {
+                                    enableBiometricAuth(true);
+                                }
+                            }, 500);
+                        }
                     } else {
                         alert('كلمة المرور غير صحيحة! ❌');
                     }
@@ -638,7 +658,6 @@
                 if (el) el.classList.toggle('hidden', !showAdmin);
             });
 
-            // فصل الواجهة بين الأدمن والفيو
             if (showAdmin) {
                 dom.vBoxTop.classList.add('hidden');
                 dom.vBoxBottom.classList.remove('hidden');
@@ -675,7 +694,7 @@
 
             localStorage.setItem(STORAGE_KEYS.adminHash, encryptedHash);
             sessionStorage.setItem('randa_admin_session', newSessionToken);
-            localStorage.removeItem(STORAGE_KEYS.bioKey); // إعادة تعيين البصمة لكلمة المرور الجديدة
+            localStorage.removeItem(STORAGE_KEYS.bioKey); // مسح البصمة السابقة لضمان الأمان
 
             try {
                 await setDoc(doc(db, "admin_config", "auth"), {
@@ -1307,10 +1326,6 @@
                 }
             });
         }
-
-        window.addEventListener('scroll', () => {
-            dom.scrollTopBtn.classList.toggle('hidden', window.scrollY < 400);
-        });
 
         function initApp() {
             if (new URLSearchParams(window.location.search).get('mode') === 'view') {
