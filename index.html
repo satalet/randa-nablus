@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Randa and Girls' Diaries 🌸</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=3">
     <meta name="theme-color" content="#ec4899">
     <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -31,12 +31,24 @@
         #imageModal:not(.hidden) #modalImg { animation: zoomIn 0.3s ease; }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+        #inAppNotification { transition: transform 0.4s ease, opacity 0.4s ease; }
+
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--pink-soft); }
         ::-webkit-scrollbar-thumb { background: var(--pink-primary); border-radius: 10px; }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-20 select-none">
+
+    <!-- لافتة الإشعار المتحركة الملفتة داخل التطبيق -->
+    <div id="inAppNotification" class="fixed top-4 left-4 right-4 z-50 bg-gradient-to-r from-pink-600 to-purple-600 text-white p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 transform -translate-y-32 opacity-0 border border-white/30 backdrop-blur-md">
+        <span class="text-2xl animate-bounce">🔔</span>
+        <div class="flex-1 text-right">
+            <h4 id="notifTitle" class="text-xs font-bold text-pink-100">يوميات رندة والبنات 🌸</h4>
+            <p id="notifMsg" class="text-xs font-bold text-white leading-tight mt-0.5">تمت إضافة منشور جديد في الألبوم!</p>
+        </div>
+        <button onclick="dismissInAppNotification()" class="text-white text-xs bg-white/20 hover:bg-white/40 px-2 py-1 rounded-lg">إغلاق</button>
+    </div>
 
     <!-- نافذة تكبير الصور -->
     <div id="imageModal" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2" onclick="closeImageModal()">
@@ -67,6 +79,9 @@
         <p class="text-sm font-bold opacity-90 text-pink-100 mt-0.5">يوميات رندة و البنات 🌸</p>
 
         <div class="flex items-center justify-center gap-2 mt-3">
+            <button id="notifBtn" onclick="requestNotificationPermission()" class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
+                🔔 تفعيل الإشعارات
+            </button>
             <button id="bioAuthBtn" onclick="handleBiometricLogin()" class="hidden bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
                 👆 دخول بالبصمة
             </button>
@@ -284,6 +299,7 @@
         let currentImageBase64 = '';
         let editingId = null;
         let isModalOpen = false;
+        let isInitialPostsLoad = true;
 
         const dom = {
             postsFeed:      document.getElementById('postsFeed'),
@@ -303,42 +319,87 @@
             scrollTopBtn:   document.getElementById('scrollTopBtn'),
             friendsList:    document.getElementById('friendsListContainer'),
             vBoxTop:        document.getElementById('verifiedUserPostBoxTop'),
-            vBoxBottom:     document.getElementById('verifiedUserPostBoxBottom')
+            vBoxBottom:     document.getElementById('verifiedUserPostBoxBottom'),
+            notifBox:       document.getElementById('inAppNotification'),
+            notifTitle:     document.getElementById('notifTitle'),
+            notifMsg:       document.getElementById('notifMsg')
         };
 
         /* ═══════════════════════════════════════════════
-           1️⃣ إدارة زر الرجوع الصارم بالهاتف (Back Button Trap)
+           1️⃣ إدارة زر الرجوع الصارم بالهاتف (Hardware Back Trap)
         ═══════════════════════════════════════════════ */
-        function ensureHistoryTrap() {
-            history.pushState({ appActive: true }, '');
+        function primeHistoryTrap() {
+            history.pushState({ app: 'randa_core' }, '');
+            history.pushState({ app: 'randa_sub' }, '');
         }
-        ensureHistoryTrap();
+        primeHistoryTrap();
 
-        window.addEventListener('popstate', () => {
-            // 1. الأولوية الأولى: إغلاق الصورة المكبرة فقط
+        window.addEventListener('touchstart', () => {
+            if (history.state?.app !== 'randa_sub') {
+                history.pushState({ app: 'randa_sub' }, '');
+            }
+        }, { once: true });
+
+        window.addEventListener('popstate', (e) => {
+            // 1. أولاً: إغلاق الصورة إن كانت مفتوحة
             if (isModalOpen) {
                 closeImageModal();
-                ensureHistoryTrap();
+                primeHistoryTrap();
                 return;
             }
 
-            // 2. الأولوية الثانية: الصعود لأول الصفحة بسلاسة إن كان نازلاً بالتصفح
-            if (window.scrollY > 120) {
+            // 2. ثانياً: الصعود لأول الصفحة إن كان يتصفح بالأسفل
+            if (window.scrollY > 150) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                ensureHistoryTrap();
+                primeHistoryTrap();
                 return;
             }
 
-            // 3. الأولوية الثالثة: طلب تأكيد صريح للخروج بعد نفاذ الخيارات
+            // 3. ثالثاً: تأكيد صريح للخروج بعد نفاذ النوافذ والتمرير
             if (confirm('🌸 هل ترغب حقاً في الخروج من تطبيق يوميات رندة؟')) {
-                history.back();
+                history.go(-2);
             } else {
-                ensureHistoryTrap();
+                primeHistoryTrap();
             }
         });
 
         /* ═══════════════════════════════════════════════
-           2️⃣ الدوال المساعدة ومعالجة الـ Base64 للمفاتيح
+           2️⃣ نظام الإشعارات (Push & Live In-App Notifications)
+        ═══════════════════════════════════════════════ */
+        window.requestNotificationPermission = async function() {
+            if (!("Notification" in window)) {
+                alert("متصفحك لا يدعم استقبال إشعارات النظام.");
+                return;
+            }
+            const perm = await Notification.requestPermission();
+            if (perm === "granted") {
+                showInAppNotification("تم تفعيل الإشعارات بنجاح! 🌸🔔", "ستصلك إشعارات فورية بكل يومية وصورة جديدة.");
+                document.getElementById('notifBtn').classList.add('hidden');
+            } else {
+                alert("تم رفض إذن الإشعارات، يمكنك تفعيله لاحقاً من إعدادات المتصفح.");
+            }
+        };
+
+        function showInAppNotification(title, msg) {
+            dom.notifTitle.textContent = title;
+            dom.notifMsg.textContent = msg;
+            dom.notifBox.classList.remove('-translate-y-32', 'opacity-0');
+            dom.notifBox.classList.add('translate-y-0', 'opacity-100');
+
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+            setTimeout(() => {
+                dismissInAppNotification();
+            }, 6000);
+        }
+
+        window.dismissInAppNotification = function() {
+            dom.notifBox.classList.add('-translate-y-32', 'opacity-0');
+            dom.notifBox.classList.remove('translate-y-0', 'opacity-100');
+        };
+
+        /* ═══════════════════════════════════════════════
+           3️⃣ الدوال المساعدة ومعالجة المفاتيح والصور
         ═══════════════════════════════════════════════ */
         function bufferToBase64(buffer) {
             return btoa(String.fromCharCode(...new Uint8Array(buffer)));
@@ -452,7 +513,7 @@
             document.getElementById('modalImg').src = src;
             document.getElementById('imageModal').classList.remove('hidden');
             isModalOpen = true;
-            ensureHistoryTrap();
+            primeHistoryTrap();
         };
 
         window.closeImageModal = function() {
@@ -462,7 +523,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           3️⃣ التسجيل الصوتي
+           4️⃣ التسجيل الصوتي
         ═══════════════════════════════════════════════ */
         window.toggleAudioRecording = async function() {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -529,7 +590,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           4️⃣ إدارة الدخول ونظام البصمة
+           5️⃣ إدارة الدخول ونظام البصمة
         ═══════════════════════════════════════════════ */
         function verifyPassword(inputPass) {
             if (!inputPass) return false;
@@ -723,7 +784,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           5️⃣ الأكواد والحسابات الموثوقة
+           6️⃣ الأكواد والحسابات الموثوقة
         ═══════════════════════════════════════════════ */
         function getLocalFriends() {
             return Object.values(friendsPinsMap);
@@ -823,7 +884,7 @@
         }
 
         /* ═══════════════════════════════════════════════
-           6️⃣ نشر الموثوقين والمنشورات العامة
+           7️⃣ نشر الموثوقين والمنشورات العامة
         ═══════════════════════════════════════════════ */
         window.publishVerifiedUserPost = async function() {
             const nameInput = document.getElementById('vPostName');
@@ -1335,11 +1396,9 @@
         });
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (let registration of registrations) {
-                    registration.unregister();
-                }
-            });
+            navigator.serviceWorker.register('sw.js?v=3').then((reg) => {
+                reg.update();
+            }).catch(() => {});
         }
 
         window.addEventListener('scroll', () => {
@@ -1363,6 +1422,10 @@
 
             updateAdminUI();
             renderPosts();
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                document.getElementById('notifBtn').classList.add('hidden');
+            }
 
             onSnapshot(collection(db, "friends_pins"), (snap) => {
                 friendsPinsMap = {};
@@ -1406,6 +1469,12 @@
                         const data = d.data();
                         if (data) posts.push(data);
                     });
+                    
+                    if (!isInitialPostsLoad && posts.length > (window.currentCloudPosts?.length || 0)) {
+                        showInAppNotification("يومية جديدة في الألبوم! 🌸📸", "أضافت رندة أو إحدى الصديقات صورة ويومية جديدة للتو.");
+                    }
+                    isInitialPostsLoad = false;
+
                     window.currentCloudPosts = posts;
                     renderPosts();
                 },
