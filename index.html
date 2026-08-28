@@ -66,7 +66,6 @@
         <h1 class="text-2xl font-extrabold eng-title tracking-wide text-white drop-shadow-sm">Randa and Girls' Diaries</h1>
         <p class="text-sm font-bold opacity-90 text-pink-100 mt-0.5">يوميات رندة و البنات 🌸</p>
 
-        <!-- أزرار الدخول مرتبة بوضوح دون تداخل -->
         <div class="flex items-center justify-center gap-2 mt-3">
             <button id="bioAuthBtn" onclick="handleBiometricLogin()" class="hidden bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
                 👆 دخول بالبصمة
@@ -308,40 +307,33 @@
         };
 
         /* ═══════════════════════════════════════════════
-           1️⃣ إدارة زر الرجوع بالهاتف
+           1️⃣ إدارة زر الرجوع بالهاتف (Full Back Trap)
         ═══════════════════════════════════════════════ */
-        history.pushState({ page: 'home' }, '');
+        function ensureHistoryTrap() {
+            history.pushState({ appActive: true }, '');
+        }
+        ensureHistoryTrap();
 
-        let hasScrolledState = false;
-        window.addEventListener('scroll', () => {
-            dom.scrollTopBtn.classList.toggle('hidden', window.scrollY < 400);
-
-            if (window.scrollY > 300 && !hasScrolledState && !isModalOpen) {
-                history.pushState({ scrolled: true }, '');
-                hasScrolledState = true;
-            } else if (window.scrollY <= 100 && hasScrolledState) {
-                hasScrolledState = false;
-            }
-        });
-
-        window.addEventListener('popstate', () => {
+        window.addEventListener('popstate', (e) => {
+            // 1. إغلاق الصورة أولاً إن كانت مفتوحة
             if (isModalOpen) {
                 closeImageModal();
-                history.pushState({ page: 'home' }, '');
+                ensureHistoryTrap();
                 return;
             }
 
-            if (window.scrollY > 150) {
+            // 2. إذا كان المستخدم نازلاً في الصفحة يصعد بسلاسة لأول الصفحة
+            if (window.scrollY > 120) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                hasScrolledState = false;
-                history.pushState({ page: 'home' }, '');
+                ensureHistoryTrap();
                 return;
             }
 
-            if (confirm('هل ترغب في الخروج من تطبيق يوميات رندة؟ 🌸')) {
+            // 3. إذا كان في أعلى الصفحة والصور مغلقة -> تأكيد الخروج الصريح
+            if (confirm('🌸 هل ترغب حقاً في الخروج من تطبيق يوميات رندة؟')) {
                 history.back();
             } else {
-                history.pushState({ page: 'home' }, '');
+                ensureHistoryTrap();
             }
         });
 
@@ -460,7 +452,7 @@
             document.getElementById('modalImg').src = src;
             document.getElementById('imageModal').classList.remove('hidden');
             isModalOpen = true;
-            history.pushState({ modal: true }, '');
+            ensureHistoryTrap();
         };
 
         window.closeImageModal = function() {
@@ -546,7 +538,6 @@
             return hashedInput === currentHash || btoa(inputPass) === currentHash;
         }
 
-        // تسجيل البصمة وحفظ الـ Credential ID
         window.enableBiometricAuth = async function(isManual = false) {
             if (!window.PublicKeyCredential) {
                 if (isManual) alert('عذراً! متصفحك أو هاتفك لا يدعم الدخول بالبصمة البيومترية.');
@@ -590,7 +581,6 @@
             }
         };
 
-        // التحقق من البصمة باستخدام الـ Credential ID المحفوظ
         window.handleBiometricLogin = async function() {
             const savedBio = localStorage.getItem(STORAGE_KEYS.bioKey);
             const savedCredId = localStorage.getItem(STORAGE_KEYS.bioCredId);
@@ -611,7 +601,6 @@
                     timeout: 60000
                 };
 
-                // تمرير المفتاح المسجل بدقة ليتعرف عليه هاتف أندرويد
                 if (savedCredId) {
                     getOptions.allowCredentials = [{
                         id: base64ToBuffer(savedCredId),
