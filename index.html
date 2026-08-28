@@ -66,15 +66,20 @@
         <h1 class="text-2xl font-extrabold eng-title tracking-wide text-white drop-shadow-sm">Randa and Girls' Diaries</h1>
         <p class="text-sm font-bold opacity-90 text-pink-100 mt-0.5">يوميات رندة و البنات 🌸</p>
 
-        <button id="authBtn" onclick="handleAuthToggle()" class="absolute left-3 top-5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
-            🔑 دخول الأدمن
-        </button>
+        <div class="absolute left-3 top-4 flex items-center gap-1.5">
+            <button id="bioAuthBtn" onclick="handleBiometricLogin()" class="hidden bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20" title="دخول بالبصمة">
+                👆 بصمة
+            </button>
+            <button id="authBtn" onclick="handleAuthToggle()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
+                🔑 الأدمن
+            </button>
+        </div>
     </header>
 
     <main class="p-4 max-w-md mx-auto mt-2">
 
-        <!-- صندوق نشر خاص بالحسابات الموثوقة -->
-        <div id="verifiedUserPostBox" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6">
+        <!-- صندوق نشر خاص بالحسابات الموثوقة (يظهر بالأعلى في وضع الفيو فقط) -->
+        <div id="verifiedUserPostBoxTop" class="bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6">
             <h3 class="text-sm font-bold text-pink-600 mb-2 flex items-center gap-1.5">
                 <span>✨ نشر صورة جديدة (خاص بالحسابات الموثوقة)</span>
             </h3>
@@ -102,25 +107,6 @@
                     <span>نشر الصورة في الألبوم</span> 🌸🚀
                 </button>
             </div>
-        </div>
-
-        <!-- لوحة إدارة أكواد الحسابات الموثوقة (للأدمن) -->
-        <div id="adminFriendsPanel" class="hidden bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
-            <h3 class="text-base font-bold text-pink-600 mb-1 flex items-center gap-2">
-                <span>🔒 إدارة أكواد الحسابات الموثوقة</span>
-            </h3>
-            <p class="text-xs text-gray-500 mb-4">أضف الاسم والكود المخصص هنا أو اضغط (🔑 توثيق) بجانب التعليق بالأسفل.</p>
-
-            <div class="flex gap-2 mb-3">
-                <input type="text" id="newFriendName" placeholder="الاسم (مثال: ابو باسم)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
-                <input type="text" id="newFriendPin" placeholder="الكود السري (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
-            </div>
-            <button onclick="addFriendFromPanel()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
-                حفظ الحساب والكود 🌸
-            </button>
-
-            <h4 class="text-xs font-bold text-gray-600 mb-2">قائمة الأكواد المعتمدة:</h4>
-            <div id="friendsListContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
         <!-- Add Post Section (Admin Only) -->
@@ -190,10 +176,32 @@
             <button id="cancelEditBtn" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-2xl hover:bg-gray-300 transition text-sm">إلغاء التعديل</button>
         </div>
 
+        <!-- لوحة إدارة أكواد الحسابات الموثوقة (للأدمن) -->
+        <div id="adminFriendsPanel" class="hidden bg-white p-5 rounded-3xl shadow-sm border border-pink-100 mb-6">
+            <h3 class="text-base font-bold text-pink-600 mb-1 flex items-center gap-2">
+                <span>🔒 إدارة أكواد الحسابات الموثوقة</span>
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">أضف الاسم والكود المخصص هنا أو اضغط (🔑 توثيق) بجانب التعليق بالأسفل.</p>
+
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="newFriendName" placeholder="الاسم (مثال: ابو باسم)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
+                <input type="text" id="newFriendPin" placeholder="الكود السري (مثال: 1234)" class="w-1/2 text-xs p-3 border border-pink-200 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300">
+            </div>
+            <button onclick="addFriendFromPanel()" class="w-full bg-pink-500 text-white font-bold text-xs py-3 rounded-2xl hover:bg-pink-600 transition shadow-sm mb-4">
+                حفظ الحساب والكود 🌸
+            </button>
+
+            <h4 class="text-xs font-bold text-gray-600 mb-2">قائمة الأكواد المعتمدة:</h4>
+            <div id="friendsListContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+
         <!-- Backup & Admin Controls Section -->
         <div id="adminBackupSection" class="hidden bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mb-6 grid grid-cols-2 gap-2">
             <button onclick="changeAdminPassword()" class="col-span-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 px-3 rounded-2xl hover:opacity-90 transition text-xs flex items-center justify-center gap-1 shadow-sm">
                 <span>🔐 تغيير كلمة سر الأدمن</span>
+            </button>
+            <button onclick="enableBiometricAuth()" class="col-span-2 bg-pink-50 text-pink-700 font-bold py-2.5 px-3 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
+                <span>👆 تفعيل الدخول بالبصمة لهذا الهاتف</span>
             </button>
             <button onclick="backupData()" class="bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
@@ -213,16 +221,24 @@
             <span class="text-xs text-pink-500 font-normal">📸 Randa and Girls' Diaries</span>
         </h3>
         <div id="postsFeed" class="space-y-6"></div>
+
+        <!-- خيار النشر للموثوقين بأسفل الصفحة للأدمن -->
+        <div id="verifiedUserPostBoxBottom" class="hidden bg-white p-4 rounded-3xl shadow-sm border border-pink-100 mt-8 mb-4">
+            <h4 class="text-xs font-bold text-gray-500 mb-2">🌸 تجربة نشر صورة كحساب موثوق (اختياري للأدمن):</h4>
+            <button onclick="document.getElementById('verifiedUserPostBoxTop').classList.remove('hidden'); this.parentElement.classList.add('hidden'); window.scrollTo({top:0, behavior:'smooth'});" class="w-full bg-pink-50 text-pink-600 font-bold py-2 rounded-xl text-xs border border-pink-200 hover:bg-pink-100 transition">
+                فتح صندوق نشر الحسابات الموثوقة ✨
+            </button>
+        </div>
     </main>
 
     <!-- زر الرجوع لأعلى -->
     <button id="scrollTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})"
         class="hidden fixed bottom-6 left-6 z-40 bg-pink-500 text-white w-11 h-11 rounded-full shadow-lg hover:bg-pink-600 transition text-xl font-bold">↑</button>
 
-    <!-- Firebase + Application Logic (Module) -->
+    <!-- Firebase & App Script (Type Module) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbeaZNjAV2pr2KU52QSnxL9zF3GMJfQjM",
@@ -241,7 +257,8 @@
             posts: 'randa_diary_posts',
             adminHash: 'randa_admin_hash',
             friendName: 'randa_friend_name',
-            friendPin: 'randa_friend_pin'
+            friendPin: 'randa_friend_pin',
+            bioKey: 'randa_admin_biokey'
         };
 
         const IMAGE_CONFIG = {
@@ -265,6 +282,7 @@
 
         let currentImageBase64 = '';
         let editingId = null;
+        let isModalOpen = false;
 
         const dom = {
             postsFeed:      document.getElementById('postsFeed'),
@@ -272,6 +290,7 @@
             cancelEditBtn:  document.getElementById('cancelEditBtn'),
             formTitle:      document.getElementById('formTitle'),
             authBtn:        document.getElementById('authBtn'),
+            bioAuthBtn:     document.getElementById('bioAuthBtn'),
             preview:        document.getElementById('preview'),
             arText:         document.getElementById('arText'),
             recordAudioBtn: document.getElementById('recordAudioBtn'),
@@ -281,9 +300,42 @@
             audioPreview:   document.getElementById('audioPreviewContainer'),
             audioPlayer:    document.getElementById('audioPreviewPlayer'),
             scrollTopBtn:   document.getElementById('scrollTopBtn'),
-            friendsList:    document.getElementById('friendsListContainer')
+            friendsList:    document.getElementById('friendsListContainer'),
+            vBoxTop:        document.getElementById('verifiedUserPostBoxTop'),
+            vBoxBottom:     document.getElementById('verifiedUserPostBoxBottom')
         };
 
+        /* ═══════════════════════════════════════════════
+           1️⃣ إدارة زر الرجوع بالهاتف (Back Button Navigation)
+        ═══════════════════════════════════════════════ */
+        history.pushState({ page: 'home' }, '');
+
+        window.addEventListener('popstate', (e) => {
+            // 1. إغلاق الصورة أولاً إن كانت مفتوحة
+            if (isModalOpen) {
+                closeImageModal(false);
+                history.pushState({ page: 'home' }, '');
+                return;
+            }
+
+            // 2. إذا كان المستخدم نازلاً بالصفحة، يصعد لأول الصفحة
+            if (window.scrollY > 250) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                history.pushState({ page: 'home' }, '');
+                return;
+            }
+
+            // 3. إذا كان في أعلى الصفحة والصور مغلقة -> تأكيد الخروج
+            if (confirm('هل ترغب في الخروج من تطبيق يوميات رندة؟ 🌸')) {
+                history.back();
+            } else {
+                history.pushState({ page: 'home' }, '');
+            }
+        });
+
+        /* ═══════════════════════════════════════════════
+           2️⃣ الدوال المساعدة والأمان
+        ═══════════════════════════════════════════════ */
         function esc(str) {
             return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -330,7 +382,8 @@
                     if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
                     const canvas = document.createElement('canvas');
                     canvas.width = width; canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
                     onDone(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = e.target.result;
@@ -386,13 +439,19 @@
             if (!src) return;
             document.getElementById('modalImg').src = src;
             document.getElementById('imageModal').classList.remove('hidden');
+            isModalOpen = true;
+            history.pushState({ modal: true }, '');
         };
 
-        window.closeImageModal = function() {
+        window.closeImageModal = function(popHistory = true) {
             document.getElementById('imageModal').classList.add('hidden');
             document.getElementById('modalImg').src = '';
+            isModalOpen = false;
         };
 
+        /* ═══════════════════════════════════════════════
+           3️⃣ التسجيل الصوتي
+        ═══════════════════════════════════════════════ */
         window.toggleAudioRecording = async function() {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
@@ -457,12 +516,90 @@
             dom.recordBtnIcon.textContent = '🎙️';
         };
 
+        /* ═══════════════════════════════════════════════
+           4️⃣ إدارة الدخول والأدمن والبصمة البيومترية
+        ═══════════════════════════════════════════════ */
         function verifyPassword(inputPass) {
             if (!inputPass) return false;
             const hashedInput = hashString(inputPass);
             const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
             return hashedInput === currentHash || btoa(inputPass) === currentHash;
         }
+
+        // تفعيل البصمة
+        window.enableBiometricAuth = async function() {
+            if (!window.PublicKeyCredential) {
+                alert('عذراً! متصفحك أو هاتفك لا يدعم الدخول بالبصمة البيومترية.');
+                return;
+            }
+
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || AUTH_HASH;
+
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Randa Diaries Admin" },
+                        user: {
+                            id: Uint8Array.from("randa_admin_user", c => c.charCodeAt(0)),
+                            name: "randa_admin",
+                            displayName: "Randa Admin"
+                        },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        timeout: 60000
+                    }
+                });
+
+                if (credential) {
+                    localStorage.setItem(STORAGE_KEYS.bioKey, currentHash);
+                    dom.bioAuthBtn.classList.remove('hidden');
+                    alert('تم تفعيل البصمة بنجاح! 🌸👆 يمكنك الآن الدخول بلمسة واحدة في المرات القادمة.');
+                }
+            } catch(e) {
+                alert('تم إلغاء أو تعذر تسجيل البصمة.');
+                console.error(e);
+            }
+        };
+
+        // الدخول بالبصمة
+        window.handleBiometricLogin = async function() {
+            const savedBio = localStorage.getItem(STORAGE_KEYS.bioKey);
+            const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
+
+            if (!savedBio || savedBio !== currentHash) {
+                alert('يرجى تسجيل الدخول بكلمة المرور وتفعيل البصمة أولاً 🔑');
+                return;
+            }
+
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        userVerification: "required",
+                        timeout: 60000
+                    }
+                });
+
+                if (assertion) {
+                    sessionStorage.setItem('randa_admin_auth', 'true');
+                    if (window.cloudSessionToken) {
+                        sessionStorage.setItem('randa_admin_session', window.cloudSessionToken);
+                    }
+                    isAdminLoggedIn = true;
+                    updateAdminUI();
+                    renderPosts();
+                    alert('تم التحقق من البصمة بنجاح! أهلاً رندة 🌸✨');
+                }
+            } catch (err) {
+                alert('فشل التحقق من البصمة، يمكنك الدخول بكلمة المرور.');
+            }
+        };
 
         window.handleAuthToggle = function() {
             if (isAdminLoggedIn) {
@@ -501,9 +638,22 @@
                 if (el) el.classList.toggle('hidden', !showAdmin);
             });
 
-            dom.authBtn.innerHTML = showAdmin ? '🔒 خروج الأدمن' : '🔑 دخول الأدمن';
-            dom.authBtn.classList.toggle('bg-red-500/80', showAdmin);
-            dom.authBtn.classList.toggle('bg-white/20', !showAdmin);
+            // فصل الواجهة بين الأدمن والفيو
+            if (showAdmin) {
+                dom.vBoxTop.classList.add('hidden');
+                dom.vBoxBottom.classList.remove('hidden');
+                dom.authBtn.innerHTML = '🔒 خروج الأدمن';
+                dom.authBtn.classList.replace('bg-white/20', 'bg-red-500/80');
+                dom.bioAuthBtn.classList.add('hidden');
+            } else {
+                dom.vBoxTop.classList.remove('hidden');
+                dom.vBoxBottom.classList.add('hidden');
+                dom.authBtn.innerHTML = '🔑 الأدمن';
+                dom.authBtn.classList.replace('bg-red-500/80', 'bg-white/20');
+                if (localStorage.getItem(STORAGE_KEYS.bioKey)) {
+                    dom.bioAuthBtn.classList.remove('hidden');
+                }
+            }
         }
 
         window.changeAdminPassword = async function() {
@@ -525,6 +675,7 @@
 
             localStorage.setItem(STORAGE_KEYS.adminHash, encryptedHash);
             sessionStorage.setItem('randa_admin_session', newSessionToken);
+            localStorage.removeItem(STORAGE_KEYS.bioKey); // إعادة تعيين البصمة لكلمة المرور الجديدة
 
             try {
                 await setDoc(doc(db, "admin_config", "auth"), {
@@ -534,10 +685,12 @@
                 alert('تم تغيير كلمة المرور وطرد أي أجهزة أخرى بنجاح! 🔐');
             } catch(e) {
                 alert('حدث خطأ أثناء المزامنة السحابية!');
-                console.error(e);
             }
         };
 
+        /* ═══════════════════════════════════════════════
+           5️⃣ الأكواد والحسابات الموثوقة
+        ═══════════════════════════════════════════════ */
         function getLocalFriends() {
             return Object.values(friendsPinsMap);
         }
@@ -635,6 +788,9 @@
             `).join('');
         }
 
+        /* ═══════════════════════════════════════════════
+           6️⃣ نشر الموثوقين والمنشورات العامة
+        ═══════════════════════════════════════════════ */
         window.publishVerifiedUserPost = async function() {
             const nameInput = document.getElementById('vPostName');
             const pinInput = document.getElementById('vPostPin');
@@ -694,7 +850,6 @@
                 cancelVerifiedPostImage();
             } catch (err) {
                 alert('حدث خطأ أثناء النشر، تأكد من اتصال الإنترنت وحاول مجدداً!');
-                console.error(err);
             }
 
             submitBtn.disabled = false;
@@ -709,7 +864,6 @@
                     await deleteDoc(doc(db, "public_posts", String(post.id)));
                 }
             } catch(e) {
-                alert('تنبيه: فشلت المزامنة السحابية للبوست مع Firebase! ❌');
                 console.error("Firebase Sync Error: ", e);
             }
         }
@@ -982,7 +1136,6 @@
             const isAdmin = isAdminLoggedIn && !isViewerMode;
             const myName = localStorage.getItem(STORAGE_KEYS.friendName) || '';
             const iLiked = (post.likesList || []).some(l => normalizeText(l.name) === normalizeText(myName));
-            
             const comments = (post.comments && Array.isArray(post.comments)) ? [...post.comments].reverse() : [];
 
             const adminControls = (!post.isDad && isAdmin) ? `
@@ -1053,7 +1206,6 @@
         window.renderPosts = function() {
             const cloudPosts = window.currentCloudPosts || [];
             const localPosts = getLocalPosts();
-
             let postMap = new Map();
 
             cloudPosts.forEach(post => {
@@ -1102,7 +1254,6 @@
                 alert('تم حفظ النسخة الاحتياطية بنجاح! 📦');
             } catch(e) {
                 alert('حدث خطأ أثناء النسخ الاحتياطي! ❌');
-                console.error(e);
             }
         };
 
@@ -1124,7 +1275,6 @@
                     alert('تمت استعادة البيانات بنجاح! 📥');
                 } catch(err) {
                     alert('ملف النسخة الاحتياطية غير صالح! ❌');
-                    console.error(err);
                 }
             };
             reader.readAsText(file);
