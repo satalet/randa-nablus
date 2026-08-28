@@ -66,9 +66,10 @@
         <h1 class="text-2xl font-extrabold eng-title tracking-wide text-white drop-shadow-sm">Randa and Girls' Diaries</h1>
         <p class="text-sm font-bold opacity-90 text-pink-100 mt-0.5">يوميات رندة و البنات 🌸</p>
 
-        <div class="absolute left-3 top-4 flex items-center gap-1.5">
-            <button id="bioAuthBtn" onclick="handleBiometricLogin()" class="hidden bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20" title="دخول بالبصمة">
-                👆 بصمة
+        <!-- أزرار الدخول مرتبة بوضوح دون تداخل -->
+        <div class="flex items-center justify-center gap-2 mt-3">
+            <button id="bioAuthBtn" onclick="handleBiometricLogin()" class="hidden bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
+                👆 دخول بالبصمة
             </button>
             <button id="authBtn" onclick="handleAuthToggle()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm border border-white/20">
                 🔑 الأدمن
@@ -201,7 +202,7 @@
                 <span>🔐 تغيير كلمة سر الأدمن</span>
             </button>
             <button onclick="enableBiometricAuth(true)" class="col-span-2 bg-pink-50 text-pink-700 font-bold py-2.5 px-3 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
-                <span>👆 إعادة تسجيل/تفعيل البصمة لهذا الهاتف</span>
+                <span>👆 تسجيل البصمة لهذا الهاتف</span>
             </button>
             <button onclick="backupData()" class="bg-pink-50 text-pink-600 font-bold py-2.5 px-2 rounded-2xl border border-pink-200 hover:bg-pink-100 transition text-xs flex items-center justify-center gap-1">
                 <span>📦 حفظ نسخة</span>
@@ -258,6 +259,7 @@
             adminHash: 'randa_admin_hash',
             friendName: 'randa_friend_name',
             friendPin: 'randa_friend_pin',
+            bioCredId: 'randa_admin_bio_cred_id',
             bioKey: 'randa_admin_biokey'
         };
 
@@ -306,7 +308,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           1️⃣ إدارة زر الرجوع بالهاتف (Back Button Navigation)
+           1️⃣ إدارة زر الرجوع بالهاتف
         ═══════════════════════════════════════════════ */
         history.pushState({ page: 'home' }, '');
 
@@ -322,7 +324,7 @@
             }
         });
 
-        window.addEventListener('popstate', (e) => {
+        window.addEventListener('popstate', () => {
             if (isModalOpen) {
                 closeImageModal();
                 history.pushState({ page: 'home' }, '');
@@ -344,8 +346,16 @@
         });
 
         /* ═══════════════════════════════════════════════
-           2️⃣ الدوال المساعدة والأمان
+           2️⃣ الدوال المساعدة ومعالجة الـ Base64 للمفاتيح
         ═══════════════════════════════════════════════ */
+        function bufferToBase64(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        }
+
+        function base64ToBuffer(base64) {
+            return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+        }
+
         function esc(str) {
             return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -527,7 +537,7 @@
         };
 
         /* ═══════════════════════════════════════════════
-           4️⃣ إدارة الدخول ونظام البصمة التلقائي
+           4️⃣ إدارة الدخول ونظام البصمة المضبوط
         ═══════════════════════════════════════════════ */
         function verifyPassword(inputPass) {
             if (!inputPass) return false;
@@ -536,7 +546,7 @@
             return hashedInput === currentHash || btoa(inputPass) === currentHash;
         }
 
-        // دالة تفعيل البصمة البيومترية
+        // تسجيل البصمة وحفظ الـ Credential ID
         window.enableBiometricAuth = async function(isManual = false) {
             if (!window.PublicKeyCredential) {
                 if (isManual) alert('عذراً! متصفحك أو هاتفك لا يدعم الدخول بالبصمة البيومترية.');
@@ -551,36 +561,43 @@
                 const credential = await navigator.credentials.create({
                     publicKey: {
                         challenge: challenge,
-                        rp: { name: "Randa Diaries", id: window.location.hostname },
+                        rp: { name: "Randa Diaries" },
                         user: {
-                            id: Uint8Array.from("randa_admin", c => c.charCodeAt(0)),
+                            id: Uint8Array.from("randa_admin_user_id", c => c.charCodeAt(0)),
                             name: "randa_admin",
                             displayName: "Randa Admin"
                         },
                         pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        authenticatorSelection: { 
+                            authenticatorAttachment: "platform", 
+                            userVerification: "required",
+                            residentKey: "preferred"
+                        },
                         timeout: 60000
                     }
                 });
 
-                if (credential) {
+                if (credential && credential.rawId) {
+                    const credIdBase64 = bufferToBase64(credential.rawId);
+                    localStorage.setItem(STORAGE_KEYS.bioCredId, credIdBase64);
                     localStorage.setItem(STORAGE_KEYS.bioKey, currentHash);
                     dom.bioAuthBtn.classList.remove('hidden');
-                    alert('تم تفعيل البصمة بنجاح! 🌸👆 يمكنك الآن الدخول بلمسة واحدة.');
+                    alert('تم تسجيل البصمة بنجاح! 🌸👆 يمكنك الآن الدخول بلمسة واحدة.');
                 }
             } catch(e) {
-                if (isManual) alert('تم إلغاء تفعيل البصمة.');
-                console.error("Biometric setup error:", e);
+                if (isManual) alert('تم إلغاء تسجيل البصمة.');
+                console.error("Biometric create error:", e);
             }
         };
 
-        // دالة تسجيل الدخول بالبصمة
+        // التحقق من البصمة باستخدام الـ Credential ID المحفوظ
         window.handleBiometricLogin = async function() {
             const savedBio = localStorage.getItem(STORAGE_KEYS.bioKey);
+            const savedCredId = localStorage.getItem(STORAGE_KEYS.bioCredId);
             const currentHash = localStorage.getItem(STORAGE_KEYS.adminHash) || window.cloudAdminHash || AUTH_HASH;
 
-            if (!savedBio || savedBio !== currentHash) {
-                alert('يرجى تسجيل الدخول بكلمة المرور وتفعيل البصمة أولاً 🔑');
+            if (!savedBio || !savedCredId || savedBio !== currentHash) {
+                alert('يرجى تسجيل الدخول بالباسورد وتسجيل البصمة أولاً 🔑');
                 return;
             }
 
@@ -588,14 +605,22 @@
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
 
-                const assertion = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: challenge,
-                        rpId: window.location.hostname,
-                        userVerification: "required",
-                        timeout: 60000
-                    }
-                });
+                const getOptions = {
+                    challenge: challenge,
+                    userVerification: "required",
+                    timeout: 60000
+                };
+
+                // تمرير المفتاح المسجل بدقة ليتعرف عليه هاتف أندرويد
+                if (savedCredId) {
+                    getOptions.allowCredentials = [{
+                        id: base64ToBuffer(savedCredId),
+                        type: 'public-key',
+                        transports: ['internal']
+                    }];
+                }
+
+                const assertion = await navigator.credentials.get({ publicKey: getOptions });
 
                 if (assertion) {
                     sessionStorage.setItem('randa_admin_auth', 'true');
@@ -608,7 +633,8 @@
                     alert('تم التحقق من البصمة بنجاح! أهلاً رندة 🌸✨');
                 }
             } catch (err) {
-                alert('فشل التحقق من البصمة، يمكنك الدخول بكلمة المرور.');
+                console.error("Biometric login error:", err);
+                alert('لم يتم التعرف على البصمة، يمكنك استخدام كلمة المرور.');
             }
         };
 
@@ -634,10 +660,9 @@
                         renderPosts();
                         alert('أهلاً بك! تم تفعيل لوحة التحكم بنجاح 🌸✨');
 
-                        // اقتراح تفعيل البصمة تلقائياً إذا لم تكن مفعلة
-                        if (window.PublicKeyCredential && !localStorage.getItem(STORAGE_KEYS.bioKey)) {
+                        if (window.PublicKeyCredential && !localStorage.getItem(STORAGE_KEYS.bioCredId)) {
                             setTimeout(() => {
-                                if (confirm('👆 هل ترغب في تفعيل بصمة الإصبع لهذا الهاتف للدخول السريع مستقبلاً؟')) {
+                                if (confirm('👆 هل ترغب في تسجيل بصمة الإصبع لهذا الهاتف للدخول السريع مستقبلاً؟')) {
                                     enableBiometricAuth(true);
                                 }
                             }, 500);
@@ -669,7 +694,7 @@
                 dom.vBoxBottom.classList.add('hidden');
                 dom.authBtn.innerHTML = '🔑 الأدمن';
                 dom.authBtn.classList.replace('bg-red-500/80', 'bg-white/20');
-                if (localStorage.getItem(STORAGE_KEYS.bioKey)) {
+                if (localStorage.getItem(STORAGE_KEYS.bioCredId)) {
                     dom.bioAuthBtn.classList.remove('hidden');
                 }
             }
@@ -694,7 +719,8 @@
 
             localStorage.setItem(STORAGE_KEYS.adminHash, encryptedHash);
             sessionStorage.setItem('randa_admin_session', newSessionToken);
-            localStorage.removeItem(STORAGE_KEYS.bioKey); // مسح البصمة السابقة لضمان الأمان
+            localStorage.removeItem(STORAGE_KEYS.bioKey);
+            localStorage.removeItem(STORAGE_KEYS.bioCredId);
 
             try {
                 await setDoc(doc(db, "admin_config", "auth"), {
